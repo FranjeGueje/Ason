@@ -1,0 +1,3 @@
+[submodule "nile"]
+	path = nile
+	url = https://github.com/imLinguin/nile
