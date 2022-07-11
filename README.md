@@ -25,7 +25,7 @@ No necesitas ser root. Este comando `install.sh` descarga el proyecto mediante g
 Para la ejecución de Asón, corre directamente `Ason.sh` y te deberá de aparecer el menú del asistente a través de la utilidad *dialog* (incluida de forma portable en esta herramienta). Ahora mismo, este es el estado del proyecto:
 ![Esta es una imagen](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/01.png)
 
-También, puedes ejectuar los comandos de nile por tu cuenta. Recuerda que lo descargamos anteriormente y preparamos el entorno. Esto sí está al 100%. Podemos hacer cualquier cosa mediante comandos. Para correr nile, mediante comandos, dentro del directorio Ason ejecuta `nile.sh` con los parámetros correctos.
+También, puedes ejectuar los comandos de nile por tu cuenta. Recuerda que lo descargamos anteriormente y preparamos el entorno. Esto sí está al 100%. Podemos hacer cualquier cosa mediante comandos. Para correr nile, mediante comandos, dentro del directorio Ason ejecuta `Ason-cli.sh` con los parámetros correctos.
 
 _**RECORDATORIO**_: nile deja la configuración en ~/.config/nile
 
