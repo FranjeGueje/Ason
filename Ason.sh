@@ -42,15 +42,16 @@ function entrar() {
     INSTALLED="$HOME/.config/nile/installed.json"
     LIBRARY="$HOME/.config/nile/library.json"
     JQ="$(pwd)/jq/jq-1.6-linux64"
+    SALIDATEMP=/tmp/Ason.tmp
 
     # Bienvenido!
-    $D Bienvenido --msgbox "$BIENVENIDA" 10 45
+    $D "Bienvenido a ASON" --infobox "$BIENVENIDA" 10 45 ; sleep 2
 }
 
 # Función con los procedimientos a realizar antes de salir
 function salir() {
     # Hasta luego!
-    $D "Hasta luego" --msgbox "$DESPEDIDA" 10 45
+    $D "Hasta pronto" --infobox "$DESPEDIDA" 10 45 ; sleep 2
 }
 
 # Función para hacer login
@@ -65,12 +66,12 @@ function menuPrincipal() {
         --stdout \
         --menu "Selecciona la opcion a realizar:" 10 50 0 \
         I "Instalar un juego." \
-        D "(NO DISPONIBLE) Desinstalar un juego instalado." \
-        A "(NO DISPONIBLE) Actualizar un juego instalado." \
-        S "(NO DISPONIBLE) Sincronizar Bibioteca." \
+        D "Desinstalar un juego instalado." \
+        A "Actualizar un juego instalado." \
+        S "Sincronizar Bibioteca." \
         O "(NO DISPONIBLE) Opciones." \
-        L "(NO DISPONIBLE) --Logout--" \
-        G "(NO DISPONIBLE) --Force Login--")
+        L "--Logout--" \
+        G "--Force Login--")
 }
 
 # Función para efectuar la opcion
@@ -119,12 +120,11 @@ function menuInstalar() {
     else
         LISTA=()
         for ((i = 0; i < $NUM; i++)); do
-            LISTA+=("$i" "$($JQ ".[$i].product.title" "$LIBRARY")" "o")
+            LISTA+=("$i" "$($JQ ".[$i].product.title" "$LIBRARY")" "off")
         done
         RUN=$($D "SELECCION" --stdout \
             --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
 
-        SALIDATEMP=/tmp/Ason.tmp
         for i in $RUN; do
             ID=$($JQ ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID"
@@ -132,7 +132,7 @@ function menuInstalar() {
             temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
         done
 
-        temp=$(grep -v destrucion < "$SALIDATEMP" | grep -v ubuntu | grep -v wl_display | grep -v wayland )
+        limpiar
         [ -f "$SALIDATEMP" ] && $D LOG-Install --msgbox "$temp" 0 0
         rm -f "$SALIDATEMP"
     fi
@@ -140,17 +140,76 @@ function menuInstalar() {
 
 # Función para mostrar el menu menuDesinstalar
 function menuDesinstalar() {
-    $D "WIP" --msgbox "Work in progres..." 0 0
+    NUM=$($JQ ". | length" "$INSTALLED")
+    NUML=$($JQ ". | length" "$LIBRARY")
+    if [ "$NUM" == 0 ] || [ "$NUML" == 0 ]; then
+        echo "Salimos."
+    else
+        LISTA=()
+        for ((i = 0; i < $NUM; i++)); do
+            ID=$($JQ ".[$i].id" "$INSTALLED")
+            for ((j = 0; j < $NUML; j++));do
+                temp=$($JQ ".[$j].id==$ID" "$LIBRARY")
+                if [ "$temp" = "true" ]; then
+                    break;
+                fi
+            done
+            LISTA+=("$i" "$($JQ ".[$j].product.title" "$LIBRARY")" "off")
+        done
+        RUN=$($D "SELECCION" --stdout \
+            --radiolist "Selecciona el juego a desinstalar..." 0 0 0 "${LISTA[@]}")
+
+        ID=$($JQ ".[$RUN].id" "$INSTALLED")
+        EJECUTAR="$NILE uninstall $ID"
+        temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
+        limpiar
+        [ -f "$SALIDATEMP" ] && $D LOG-Uninstall --msgbox "$temp" 0 0
+        rm -f "$SALIDATEMP"
+    fi
 }
 
 # Función para mostrar el menu menuActualizar
 function menuActualizar() {
-    $D "WIP" --msgbox "Work in progres..." 0 0
+    NUM=$($JQ ". | length" "$INSTALLED")
+    NUML=$($JQ ". | length" "$LIBRARY")
+    if [ "$NUM" == 0 ] || [ "$NUML" == 0 ]; then
+        echo "Salimos."
+    else
+        LISTA=()
+        for ((i = 0; i < $NUM; i++)); do
+            ID=$($JQ ".[$i].id" "$INSTALLED")
+            for ((j = 0; j < $NUML; j++));do
+                temp=$($JQ ".[$j].id==$ID" "$LIBRARY")
+                if [ "$temp" = "true" ]; then
+                    break;
+                fi
+            done
+            LISTA+=("$i" "$($JQ ".[$j].product.title" "$LIBRARY")" "off")
+        done
+        RUN=$($D "SELECCION" --stdout \
+            --checklist "Selecciona el juego a actualizar..." 0 0 0 "${LISTA[@]}")
+
+        for i in $RUN; do
+            ID=$($JQ ".[$i].id" "$LIBRARY")
+            EJECUTAR="$NILE update $ID"
+            echo "Actualizando $($JQ .["$i"].product.title "$LIBRARY"). Espere ..."
+            temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
+        done
+        
+        limpiar
+        [ -f "$SALIDATEMP" ] && $D LOG-Update --msgbox "$temp" 0 0
+        rm -f "$SALIDATEMP"
+    fi
 }
 
 # Función para mostrar el menu menuSincronizar
 function menuSincronizar() {
-    $D "WIP" --msgbox "Work in progres..." 0 0
+    $D "Sincronizar Biblioteca" --msgbox "Se procedera a sincronizar la biblioteca de Amazon Games con Ason.\nPulse OK y espere." 0 0
+    $NILE library sync 2>"$SALIDATEMP"
+
+    limpiar
+    [ -f "$SALIDATEMP" ] && $D LOG-Logout --msgbox "$temp" 0 0
+    rm -f "$SALIDATEMP"
 }
 
 # Función para mostrar el menu menuOpciones
@@ -160,12 +219,40 @@ function menuOpciones() {
 
 # Función para mostrar el menu menuLogout
 function menuLogout() {
-    $D "WIP" --msgbox "Work in progres..." 0 0
+    $D "Forzar Cierre de Usuario" --yesno "Se procedera a hacer logout de tu cuenta de Amazon y salir de Ason.\nQuiere continuar?" 0 0
+    ans=$?
+    if [ $ans -eq 0 ]; then
+        $NILE auth --logout 2>"$SALIDATEMP"
+        rm -f "$USER"
+
+        limpiar
+        [ -f "$SALIDATEMP" ] && $D LOG-Logout --msgbox "$temp" 0 0
+        rm -f "$SALIDATEMP"
+
+        salir
+        exit 0
+    fi
 }
 
 # Función para mostrar el menu menuLogin
 function menuLogin() {
-    $D "WIP" --msgbox "Work in progres..." 0 0
+    $D "Sin login de usuario" --yesno "Se procedera a hacer logout de tu cuenta de Amazon y volver a iniciar.\nQuiere continuar?" 0 0
+    ans=$?
+    if [ $ans -eq 0 ]; then
+        $NILE auth --logout 2>"$SALIDATEMP"
+        rm -f "$USER"
+        $NILE auth -l 2>>"$SALIDATEMP"
+
+        limpiar
+        [ -f "$SALIDATEMP" ] && $D LOG-Login_Logout --msgbox "$temp" 0 0
+        rm -f "$SALIDATEMP"
+    fi
+}
+
+# Función auxiliar para limpiar la salida
+function limpiar() {
+    temp=$(grep -v destruction <"$SALIDATEMP" | grep -v ubuntu | grep -v wl_display | grep -v wayland)
+    # Deja en una valiable temp el fichero $SALIDATEMP limpiado de errores de Deck
 }
 
 ##############################################################################################################################################################
@@ -181,7 +268,13 @@ SIZE="$(stat -c "%s" "$USER")"
 
 while [ ! -f "$USER" ]; do
     $D "Sin login de usuario" --yesno "No se encuentra informacion sobre el login. \n\nQuieres lanzar la peticion de login?\n\
-Si elige NO ASON terminara su ejecucion. \n\n\nElige tu respuesta..." 15 50 && dologin || break
+Si elige NO ASON terminara su ejecucion. \n\n\nElige tu respuesta..." 15 50
+    ans=$?
+    if [ $ans -eq 0 ]; then
+        dologin
+    else
+        break
+    fi
 done
 
 while :; do
