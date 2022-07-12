@@ -1,4 +1,4 @@
-# Asón
+# Asón ([A]mazon on [S]teamOS [O]ver [N]ile)
 _**A GUI for an unofficial Amanzon Games Launcher (nile)**_
 
 Esta utilidad **querrá** ser un frontend, GUI o asistente para Amazon Games Launcher en Linux. Para esto, Asón se apoya en nile https://github.com/imLinguin/nile ¡Todos los aplausos para esta utilidad! _**nile**_ es una herramienta escrita en python que sirve de cliente de Amazon Games en Linux, todo mediante simples comandos.
