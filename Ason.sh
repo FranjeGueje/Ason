@@ -153,8 +153,9 @@ function menuLogin() {
 # Preparamos el entorno y lanzamos la funcion entrar()
 entrar
 
+SIZE="$(stat -c "%s" "$USER")"
 # Si el fichero con los datos de usuario está vacío, lo borramos para que vuelva a pedir login
-[ "$(stat -c "%s" "$USER")" ] && rm "$USER" -f
+[ "$SIZE" -eq "0" ] && rm "$USER" -f
 
 while [ ! -f "$USER" ]; do
     $D "Sin login de usuario" --yesno "No se encuentra informacion sobre el login. \n\nQuieres lanzar la peticion de login?\n\
