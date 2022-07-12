@@ -45,13 +45,15 @@ function entrar() {
     SALIDATEMP=/tmp/Ason.tmp
 
     # Bienvenido!
-    $D "Bienvenido a ASON" --infobox "$BIENVENIDA" 10 45 ; sleep 2
+    $D "Bienvenido a ASON" --infobox "$BIENVENIDA" 10 45
+    sleep 2
 }
 
 # Función con los procedimientos a realizar antes de salir
 function salir() {
     # Hasta luego!
-    $D "Hasta pronto" --infobox "$DESPEDIDA" 10 45 ; sleep 2
+    $D "Hasta pronto" --infobox "$DESPEDIDA" 10 45
+    sleep 2
 }
 
 # Función para hacer login
@@ -148,10 +150,10 @@ function menuDesinstalar() {
         LISTA=()
         for ((i = 0; i < $NUM; i++)); do
             ID=$($JQ ".[$i].id" "$INSTALLED")
-            for ((j = 0; j < $NUML; j++));do
+            for ((j = 0; j < $NUML; j++)); do
                 temp=$($JQ ".[$j].id==$ID" "$LIBRARY")
                 if [ "$temp" = "true" ]; then
-                    break;
+                    break
                 fi
             done
             LISTA+=("$i" "$($JQ ".[$j].product.title" "$LIBRARY")" "off")
@@ -159,12 +161,14 @@ function menuDesinstalar() {
         RUN=$($D "SELECCION" --stdout \
             --radiolist "Selecciona el juego a desinstalar..." 0 0 0 "${LISTA[@]}")
 
-        ID=$($JQ ".[$RUN].id" "$INSTALLED")
-        EJECUTAR="$NILE uninstall $ID"
-        temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
-        limpiar
-        [ -f "$SALIDATEMP" ] && $D LOG-Uninstall --msgbox "$temp" 0 0
-        rm -f "$SALIDATEMP"
+        if [ -n "$RUN" ]; then
+            ID=$($JQ ".[$RUN].id" "$INSTALLED")
+            EJECUTAR="$NILE uninstall $ID"
+            temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
+            limpiar
+            [ -f "$SALIDATEMP" ] && $D LOG-Uninstall --msgbox "$temp" 0 0
+            rm -f "$SALIDATEMP"
+        fi
     fi
 }
 
@@ -178,10 +182,10 @@ function menuActualizar() {
         LISTA=()
         for ((i = 0; i < $NUM; i++)); do
             ID=$($JQ ".[$i].id" "$INSTALLED")
-            for ((j = 0; j < $NUML; j++));do
+            for ((j = 0; j < $NUML; j++)); do
                 temp=$($JQ ".[$j].id==$ID" "$LIBRARY")
                 if [ "$temp" = "true" ]; then
-                    break;
+                    break
                 fi
             done
             LISTA+=("$i" "$($JQ ".[$j].product.title" "$LIBRARY")" "off")
@@ -195,7 +199,7 @@ function menuActualizar() {
             echo "Actualizando $($JQ .["$i"].product.title "$LIBRARY"). Espere ..."
             temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
         done
-        
+
         limpiar
         [ -f "$SALIDATEMP" ] && $D LOG-Update --msgbox "$temp" 0 0
         rm -f "$SALIDATEMP"
