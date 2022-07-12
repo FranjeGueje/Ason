@@ -114,25 +114,26 @@ function ejecutarOpcion() {
 # Función para mostrar el menu menuInstalar
 function menuInstalar() {
     NUM=$($JQ ". | length" "$LIBRARY")
-    if [ "$NUM" == 0 ] ; then
+    if [ "$NUM" == 0 ]; then
         echo "Salimos."
     else
         LISTA=()
-        for ((i=0; i < $NUM; i++)); do
+        for ((i = 0; i < $NUM; i++)); do
             LISTA+=("$i" "$($JQ ".[$i].product.title" "$LIBRARY")" "o")
         done
         RUN=$($D "SELECCION" --stdout \
-        --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
-        
+            --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
+
         SALIDATEMP=/tmp/Ason.tmp
-        for i in $RUN ; do
+        for i in $RUN; do
             ID=$($JQ ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID"
             echo "Instalando $($JQ .[$i].product.title "$LIBRARY"). Espere ..."
-            temp=$(eval "$EJECUTAR" 2>> "$SALIDATEMP")
+            temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
         done
-        
-        [ -f "$SALIDATEMP" ] && $D LOG-Install --textbox "$SALIDATEMP" 0 0
+
+        [ -f "$SALIDATEMP" ] && temp=$(grep -v destrucion < "$SALIDATEMP" | grep -v ubuntu | grep -v wl_display | grep -v wayland ) \
+            && $D LOG-Install --textbox "$temp" 0 0
         rm -f "$SALIDATEMP"
     fi
 }
