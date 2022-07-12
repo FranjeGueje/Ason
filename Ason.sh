@@ -113,7 +113,25 @@ function ejecutarOpcion() {
 
 # Función para mostrar el menu menuInstalar
 function menuInstalar() {
-    $D "WIP" --msgbox "Work in progres..." 0 0
+    NUM=$($JQ ". | length" "$LIBRARY")
+    if [ "$NUM" == 0 ] ; then
+        echo "Salimos."
+    else
+        LISTA=()
+        for ((i=0; i < $NUM; i++)); do
+            LISTA+=("$i" "$($JQ ".[$i].product.title" "$LIBRARY")" "o")
+        done
+        RUN=$($D "SELECCION" --stdout \
+        --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
+        
+        for i in $RUN ; do
+            ID=$($JQ ".[$i].id" "$LIBRARY")
+            EJECUTAR="$NILE install $ID"
+            eval "$EJECUTAR"
+            TITLE=$($JQ .[$i].product.title "$LIBRARY")
+            $D "Juego Instalado" --msgbox "$TITLE se ha instalado." 0 0
+        done
+    fi
 }
 
 # Función para mostrar el menu menuDesinstalar
