@@ -30,9 +30,49 @@ También, puedes ejectuar los comandos de nile por tu cuenta. Recuerda que lo de
 
 _**RECORDATORIO**_: nile deja la configuración en ~/.config/nile
 
+# FAQ
+## ¿Cómo se instala?
+Fácil: Abre un terminal/consola y ejecuta este comando:
+
+**`curl https://raw.githubusercontent.com/FranjeGueje/Ason/master/INSTALL/install.sh | bash -s`**
+
+El asistente de instalación lo hará todo por ti y tendrás la última versión de la herramienta.
+
+## ¿Dónde se instala?
+Por defecto, se instala en la HOME del usuario, en el directorio **`$HOME/Ason`**. Si usas Deck, en /home/deck/Ason lo tendrás instalado.
+
+## No me gusta esa ubicación, ¿puedo cambiarla?
+Sí. Aunque se recomienda esa ubicación, Asón es portable y debería de poder moverse y seguir funcionando.
+
+## ¿Cómo se ejecuta?
+Tienes tres formas de ejecutar Asón:
+* Doble clic en **Ason.desktop**. _RECOMENDADO_
+* Desde la línea de comandos, ejecuta: `Anson.sh`
+* Desde la línea de comandos, puedes ejecutar cada comando de Anson/Nile como un profesional. _Para usuarios experimentados_
+
+## ¿Dónde se instalan los juegos?
+Por defecto Ansón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile"
+
+## ¿Se puede cambiar la ubicación de instalación de videojuegos?
+Actualmente no... se trabajará para dar opciones en las próximas versiones.
+
+## ¿Cómo se desinstala? No quiero ningún resto.
+Simple. Para desinstalalar Ansó únicamente borra las carpetas con sus subcarpetas y ficheros:
+* $HOME/Anson
+* $HOME/.config/nile
+
+## Parece que sacas versiones continuamente, que estás mejorándolo, ¿como me actualizo a la última versión?
+Fácil, borra la carpeta de Ansón (recuerda, la carpeta por defecto está en $HOME/Anson) y lanza el comando de instalación desde un terminal/consola. Se volverá a descargar la última versión.
+
+## He visto que lo has ejecutado desde el GAMEMODE de Steam Deck, ¿cómo lo hago yo?
+Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado a hacer... Los parámetros que tienes que ponerle son:
+- Comando a ejecutar: `"/usr/bin/xterm"`
+- Ubicación: `"/home/deck/Anson"` (o donde tengas Ansón)
+- Parámetros: `-e "/home/deck/Anson/Anson.sh"` (o donde tengas Ansón)
+
 # TODO
-- Utilidad para la descarga de la herramienta automáticamente o bien crear una release.
-- Asistente en dialog portable, que no haya que instalar nada de paquetes en SteamOS.
-- Wizard básico para: listar y descargar juegos.
+- Cambiar opciones para dar más libertad de descargas.
 - Mejorar Wizard para ejecutar juegos en bottles.
+- Avisar de que el juego tiene dependencias de terceros.
+- ¿Instalar las dependencias de terceros en bottles?
 - ...
