@@ -128,12 +128,12 @@ function menuInstalar() {
         for i in $RUN; do
             ID=$($JQ ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID"
-            echo "Instalando $($JQ .[$i].product.title "$LIBRARY"). Espere ..."
+            echo "Instalando $($JQ .["$i"].product.title "$LIBRARY"). Espere ..."
             temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
         done
 
-        [ -f "$SALIDATEMP" ] && temp=$(grep -v destrucion < "$SALIDATEMP" | grep -v ubuntu | grep -v wl_display | grep -v wayland ) \
-            && $D LOG-Install --textbox "$temp" 0 0
+        temp=$(grep -v destrucion < "$SALIDATEMP" | grep -v ubuntu | grep -v wl_display | grep -v wayland )
+        [ -f "$SALIDATEMP" ] && $D LOG-Install --msgbox "$temp" 0 0
         rm -f "$SALIDATEMP"
     fi
 }
