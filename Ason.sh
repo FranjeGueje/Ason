@@ -128,6 +128,7 @@ function menuInstalar() {
         for i in $RUN ; do
             ID=$($JQ ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID"
+            echo "Instalando $($JQ .[$i].product.title "$LIBRARY"). Espere ..."
             temp=$(eval "$EJECUTAR" 2>> "$SALIDATEMP")
         done
         
