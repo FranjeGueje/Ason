@@ -65,12 +65,12 @@ function menuPrincipal() {
         --stdout \
         --menu "Selecciona la opcion a realizar:" 10 50 0 \
         I "Instalar un juego." \
-        D "Desinstalar un juego instalado." \
-        A "Actualizar un juego instalado." \
-        S "Sincronizar Bibioteca." \
-        O "Opciones." \
-        L "--Logout--" \
-        G "--Force Login--")
+        D "(NO DISPONIBLE) Desinstalar un juego instalado." \
+        A "(NO DISPONIBLE) Actualizar un juego instalado." \
+        S "(NO DISPONIBLE) Sincronizar Bibioteca." \
+        O "(NO DISPONIBLE) Opciones." \
+        L "(NO DISPONIBLE) --Logout--" \
+        G "(NO DISPONIBLE) --Force Login--")
 }
 
 # Función para efectuar la opcion
@@ -124,13 +124,15 @@ function menuInstalar() {
         RUN=$($D "SELECCION" --stdout \
         --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
         
+        SALIDATEMP=/tmp/Ason.tmp
         for i in $RUN ; do
             ID=$($JQ ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID"
-            eval "$EJECUTAR"
-            TITLE=$($JQ .[$i].product.title "$LIBRARY")
-            $D "Juego Instalado" --msgbox "$TITLE se ha instalado." 0 0
+            temp=$(eval "$EJECUTAR" 2>> "$SALIDATEMP")
         done
+        
+        [ -f "$SALIDATEMP" ] && $D LOG-Install --textbox "$SALIDATEMP" 0 0
+        rm -f "$SALIDATEMP"
     fi
 }
 
