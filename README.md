@@ -67,8 +67,8 @@ Fácil, borra la carpeta de Asón (recuerda, la carpeta por defecto está en $HO
 ## He visto que lo has ejecutado desde el GAMEMODE de Steam Deck, ¿cómo lo hago yo?
 Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado a hacer... Los parámetros que tienes que ponerle son:
 - Comando a ejecutar: `"/usr/bin/xterm"`
-- Ubicación: `"/home/deck/Ason"` (o donde tengas Ansón)
-- Parámetros: `-e "/home/deck/Ason/Ason.sh"` (o donde tengas Ansón)
+- Ubicación: `"/home/deck/Ason"` (o donde tengas Asón)
+- Parámetros: `-e "/home/deck/Ason/Ason.sh"` (o donde tengas Asón)
 
 # TODO
 - Mejorar Wizard para ejecutar juegos en bottles. En versión 2.
