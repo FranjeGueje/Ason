@@ -1,4 +1,15 @@
-v1.1
+v1.2
+
+# Version 1.2
+Nuevas funciones:
+- Ejecuta juegos desde una botella previamente creada llamada Ason.
+- Instala dependencias del juego que se quiera ejecutar.
+
+Arrelgos:
+- Mejoras de estabilidad.
+- Arreglar fallos de documentación.
+- Erratas sintácticas.
+
 
 # Version 1.1
 Nuevas funciones:

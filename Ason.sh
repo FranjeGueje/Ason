@@ -77,6 +77,7 @@ function menuPrincipal() {
     OPCION=$($D "MENU PRINCIPAL" \
         --stdout \
         --menu "Selecciona la opcion a realizar:" 10 50 0 \
+        J "Jugar a un juego instalado. (BOTTLES)" \
         I "Instalar un juego." \
         D "Desinstalar un juego instalado." \
         A "Actualizar un juego instalado." \
@@ -88,6 +89,9 @@ function menuPrincipal() {
 function ejecutarOpcion() {
     # Opciones y menus
     case "$OPCION" in
+    J)
+        echo -ne "--> Entrando en menú de EJECUCIÓN" && menuEjecutar
+        ;;
     I)
         echo -ne "--> Entrando en menú de INSTALACION" && menuInstalar
         ;;
@@ -113,6 +117,41 @@ function ejecutarOpcion() {
         ;;
     esac
     OPCION=""
+}
+
+# Función para ejecutar un juego a través de bottles
+function menuEjecutar() {
+    # ¿Tenemos instalado bottles?
+    flatpak run --command=bottles-cli com.usebottles.bottles --help >/dev/null
+    ans=$?
+    if [ ! "$ans" -eq 0 ]; then
+        $D "Error" --infobox "Sin bottles instalado. Por favor, para usar esta funcionalidad, debes de instalar bottles desde discover." 0 0
+        sleep 3
+    else
+        # Existe la botella Ason ¿? Si no, hay que crearla
+        ans=$(flatpak run --command=bottles-cli com.usebottles.bottles list bottles | grep -c Asonn)
+        if [ "$ans" -eq 0 ]; then
+            $D "Botella sin crear" --stdout --yesno "No tiene creada la botella llamada Ason. Desea crearla? (es necesaria)" 15 50
+            ans=$?
+            if [ $ans -eq 0 ]; then
+                #$D "Creando la botella." --infobox "Espere...\n Tarda aproximadamente 1 minuto o mas." 0 0
+                #flatpak run --command=bottles-cli com.usebottles.bottles new --bottle-name Ason --environment gaming
+                $D "No puedo continuar. Funcion no disponible aun" --msgbox "Sin implementar la funcion de crear la botella.\n\n\
+PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella llamada Ason desde bottles antes de usar esta funcionalidad." 0 0
+            else
+                echo "NO quiero crear la botella."
+                return
+            fi
+        fi
+        echo Ya tenemos instalada la botella Ason creada.
+        # Mostramos los juegos instalados en un menú.
+
+        # Al seleccionarlo, nos salta otro menú
+        #menuEjecutarJuego
+        # [Lanzar juego]
+        # [Instalar dependencias]
+    fi
+
 }
 
 # Función para mostrar el menu menuInstalar
@@ -205,7 +244,7 @@ function menuActualizar() {
 
 # Función para mostrar el menu menuSincronizar
 function menuSincronizar() {
-    
+
     $D "Sincronizar Biblioteca" --msgbox "Se procedera a sincronizar la biblioteca de Amazon Games con Ason.\nPulse OK y espere." 0 0
     $NILE library sync 2>"$SALIDATEMP"
 
@@ -242,7 +281,7 @@ function menuOpciones() {
 function menuCambioUbi() {
     NUEVARUTA=$($D "Cambio del directorio de instalacion de juegos" --stdout --inputbox "Nuevo directorio de instalacion" 0 0 "$RUTAINSTALL")
     [ ! -d "$NUEVARUTA" ] && $D "ATENCION!!!" --msgbox "La ruta que indicas no existe.\nNo se realiza ningun cambio." 0 0
-    [ -d "$NUEVARUTA" ] && RUTAINSTALL="$NUEVARUTA" && echo "$NUEVARUTA" > "$CONFIGRUTA"
+    [ -d "$NUEVARUTA" ] && RUTAINSTALL="$NUEVARUTA" && echo "$NUEVARUTA" >"$CONFIGRUTA"
 }
 
 # Función para mostrar el menu menuLogout

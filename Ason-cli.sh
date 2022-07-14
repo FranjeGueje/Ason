@@ -1,5 +1,5 @@
 # /bin/bash
 
-source env/bin/activate && nile/bin/nile $*
+source env/bin/activate && nile/bin/nile "$*"
 
 exit 0
