@@ -153,7 +153,7 @@ function menuDesinstalar() {
     else
         LISTA=()
         for ((i = 0; i < NUM; i++)); do
-            ID=$($JQ ".[$i].id" "$INSTALLED")
+            ID=$($JQ -r ".[$i].id" "$INSTALLED")
             NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
             LISTA+=("$i" "$NOMBRE" "off")
         done
