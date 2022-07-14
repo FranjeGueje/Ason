@@ -71,8 +71,8 @@ Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado
 - Parámetros: `-e "/home/deck/Anson/Anson.sh"` (o donde tengas Ansón)
 
 # TODO
-- Cambiar opciones para dar más libertad de descargas.
-- Mejorar Wizard para ejecutar juegos en bottles.
-- Avisar de que el juego tiene dependencias de terceros.
-- ¿Instalar las dependencias de terceros en bottles?
+- Cambiar ubiciación de instalación.
+- Mejorar Wizard para ejecutar juegos en bottles. En versión 2.
+- Avisar de que el juego tiene dependencias de terceros. En versión 2.
+- ¿Instalar las dependencias de terceros en bottles? ¿En versión 2?
 - ...
