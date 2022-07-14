@@ -80,7 +80,7 @@ function menuPrincipal() {
         I "Instalar un juego." \
         D "Desinstalar un juego instalado." \
         A "Actualizar un juego instalado." \
-        S "Sincronizar Bibioteca." \
+        S "Sincronizar Biblioteca." \
         O "Opciones.")
 }
 
