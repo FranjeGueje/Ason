@@ -1,4 +1,10 @@
-v1.0
+v1.1
+
+# Version 1.1
+Nuevas funciones:
+- Opción para cambiar de ubicación la instalación de juegos.
+- Ampliar Readme y doc.
+
 
 # Version 1.0
 Nuevas funciones:
