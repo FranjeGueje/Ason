@@ -163,7 +163,7 @@ PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella 
                 # En ID tenemos el id del juego seleccionado.
                 OPCION=$($D "MENU DE EJECUCION para $NOMBRE" \
                     --stdout \
-                    --menu "Instalar dependencias?" 20 120 0 \
+                    --menu "Instalar dependencias?" 8 100 0 \
                     N "Lanzar el juego directamente. (BOTTLES)" \
                     Y "Instalar en (BOTTLES) las dependencias del juego [Hazlo al menos una vez].")
                 case "$OPCION" in
