@@ -5,7 +5,7 @@ Nuevas funciones:
 - Ejecuta juegos desde una botella previamente creada llamada Ason.
 - Instala dependencias del juego que se quiera ejecutar.
 
-Arrelgos:
+Arreglos:
 - Mejoras de estabilidad.
 - Arreglar fallos de documentación.
 - Erratas sintácticas.

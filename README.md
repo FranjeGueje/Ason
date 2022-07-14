@@ -28,7 +28,15 @@ Para la ejecución de Asón, corre directamente `Ason.sh` y te deberá de aparec
 
 También, puedes ejectuar los comandos de nile por tu cuenta. Recuerda que lo descargamos anteriormente y preparamos el entorno. Esto sí está al 100%. Podemos hacer cualquier cosa mediante comandos. Para correr nile, mediante comandos, dentro del directorio Ason ejecuta `Ason-cli.sh` con los parámetros correctos.
 
-_**RECORDATORIO**_: nile deja la configuración en ~/.config/nile
+_**RECORDATORIO**_: nile deja la configuración en ~/.config/nile/
+
+# REQUISITOS
+Para descargas, instalación y desinstalación de juegos de Amazon no es necesario ningún requisito.
+En cambio, para la ejecución de juegos, es necesario:
+* Tener instalado la Bottles a través de discover.
+* Que Bottles tenga asignado permisos en la ruta donde trabaja con las botellas. (Puede hacerse con Flatseal)
+* Que Bottles tenga asignado permisos en la ruta donde se descargan los juegos a través de Asón. (Puede hacerse con Flatseal)
+* Tener una botella creada, llamada `Ason` con la configuración que runner, dxkv, ... que se quiera utilizar. (Debe de hacerse desde la propia herramienta de Bottles)
 
 # FAQ
 ## ¿Cómo se instala?
@@ -49,6 +57,9 @@ Tienes tres formas de ejecutar Asón:
 * Doble clic en **Ason.desktop**. _RECOMENDADO_
 * Desde la línea de comandos, ejecuta: `Ason.sh`
 * Desde la línea de comandos, puedes ejecutar cada comando de Ason/Nile como un profesional. _Para usuarios experimentados_
+
+## ¿Puedo ejecutar juegos desde el propio Asón?
+Sí, ya a partir de la versión 1.2 es posible lanzar juegos automáticamente desde la herramienta. Esta usa bottles actualmente.
 
 ## ¿Dónde se instalan los juegos?
 Por defecto Asón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile". Es decir, en SteamOS en **/home/deck/Games/nile**
@@ -71,7 +82,6 @@ Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado
 - Parámetros: `-e "/home/deck/Ason/Ason.sh"` (o donde tengas Asón)
 
 # TODO
-- Mejorar Wizard para ejecutar juegos en bottles. En versión 2.
-- Avisar de que el juego tiene dependencias de terceros. En versión 2.
-- ¿Instalar las dependencias de terceros en bottles? ¿En versión 2?
+- Crear entorno de bottles automáticamente, no fuera de la herramienta.
+- Posibilidad de crear varias botellas y elegir la dupla juego/botella.
 - ...

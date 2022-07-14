@@ -7,7 +7,7 @@
 #
 # PARÁMETRO: No tiene.
 #
-# REQUISITOS: No tiene más allá de los requeridos por el proyecto global ASON..
+# REQUISITOS: No tiene más allá de los requeridos por el proyecto global ASON.
 #
 # EXITs:
 # 0 --> Salida correcta.
@@ -129,7 +129,7 @@ function menuEjecutar() {
         sleep 3
     else
         # Existe la botella Ason ¿? Si no, hay que crearla
-        ans=$(flatpak run --command=bottles-cli com.usebottles.bottles list bottles | grep -c Asonn)
+        ans=$(flatpak run --command=bottles-cli com.usebottles.bottles list bottles | grep -c Ason)
         if [ "$ans" -eq 0 ]; then
             $D "Botella sin crear" --stdout --yesno "No tiene creada la botella llamada Ason. Desea crearla? (es necesaria)" 15 50
             ans=$?
@@ -145,11 +145,43 @@ PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella 
         fi
         echo Ya tenemos instalada la botella Ason creada.
         # Mostramos los juegos instalados en un menú.
+        NUM=$($JQ ". | length" "$INSTALLED")
+        if [ "$NUM" == 0 ]; then
+            echo "Salimos."
+        else
+            LISTA=()
+            for ((i = 0; i < NUM; i++)); do
+                ID=$($JQ -r ".[$i].id" "$INSTALLED")
+                NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
+                LISTA+=("$i" "$NOMBRE" "off")
+            done
+            RUN=$($D "SELECCION" --stdout \
+                --radiolist "Selecciona el juego a ejecutar..." 0 0 0 "${LISTA[@]}")
 
-        # Al seleccionarlo, nos salta otro menú
-        #menuEjecutarJuego
-        # [Lanzar juego]
-        # [Instalar dependencias]
+            if [ -n "$RUN" ]; then
+                ID=$($JQ -r ".[$RUN].id" "$INSTALLED")
+                # En ID tenemos el id del juego seleccionado.
+                OPCION=$($D "MENU DE EJECUCION para $NOMBRE" \
+                    --stdout \
+                    --menu "Instalar dependencias?" 20 120 0 \
+                    N "Lanzar el juego directamente. (BOTTLES)" \
+                    Y "Instalar en (BOTTLES) las dependencias del juego [Hazlo al menos una vez].")
+                case "$OPCION" in
+                N)
+                    echo -ne "--> Lanzamos el juego directamente\n"
+                    $NILE launch -b Ason "$ID"
+                    ;;
+                Y)
+                    echo -ne "--> Lanzamos la instalacion dependencias del juegos."
+                    find "$($JQ -r .["$RUN"].path "$INSTALLED")/dependencies/" -name "*.exe" -exec \
+                    flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
+                    ;;
+                *)
+                    echo -ne "--> Volviendo al menu anterior"
+                    ;;
+                esac
+            fi
+        fi
     fi
 
 }
@@ -162,7 +194,7 @@ function menuInstalar() {
     else
         LISTA=()
         for ((i = 0; i < NUM; i++)); do
-            LISTA+=("$i" "$($JQ ".[$i].product.title" "$LIBRARY")" "off")
+            LISTA+=("$i" "$($JQ -r ".[$i].product.title" "$LIBRARY")" "off")
         done
         RUN=$($D "SELECCION" --stdout \
             --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
@@ -172,9 +204,9 @@ function menuInstalar() {
 
         [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
         for i in $RUN; do
-            ID=$($JQ ".[$i].id" "$LIBRARY")
+            ID=$($JQ -r ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID --base-path $RUTAINSTALL"
-            echo $((n * 100 / TOTAL)) | $D "Instalando $($JQ .["$i"].product.title "$LIBRARY")" --gauge "Espere..." 10 60 0
+            echo $((n * 100 / TOTAL)) | $D "Instalando $($JQ -r .["$i"].product.title "$LIBRARY")" --gauge "Espere..." 10 60 0
             ((n++))
             temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
         done
@@ -186,8 +218,7 @@ function menuInstalar() {
 # Función para mostrar el menu menuDesinstalar
 function menuDesinstalar() {
     NUM=$($JQ ". | length" "$INSTALLED")
-    NUML=$($JQ ". | length" "$LIBRARY")
-    if [ "$NUM" == 0 ] || [ "$NUML" == 0 ]; then
+    if [ "$NUM" == 0 ]; then
         echo "Salimos."
     else
         LISTA=()
@@ -201,7 +232,7 @@ function menuDesinstalar() {
 
         [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
         if [ -n "$RUN" ]; then
-            ID=$($JQ ".[$RUN].id" "$INSTALLED")
+            ID=$($JQ -r ".[$RUN].id" "$INSTALLED")
             EJECUTAR="$NILE uninstall $ID"
             temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
 
@@ -213,8 +244,7 @@ function menuDesinstalar() {
 # Función para mostrar el menu menuActualizar
 function menuActualizar() {
     NUM=$($JQ ". | length" "$INSTALLED")
-    NUML=$($JQ ". | length" "$LIBRARY")
-    if [ "$NUM" == 0 ] || [ "$NUML" == 0 ]; then
+    if [ "$NUM" == 0 ]; then
         echo "Salimos."
     else
         LISTA=()
@@ -231,7 +261,7 @@ function menuActualizar() {
 
         [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
         for i in $RUN; do
-            ID=$($JQ ".[$i].id" "$INSTALLED")
+            ID=$($JQ -r ".[$i].id" "$INSTALLED")
             EJECUTAR="$NILE update $ID"
             echo $((n * 100 / TOTAL)) | $D "Actualizando $n de $TOTAL" --gauge "Espere..." 10 60 0
             ((n++))
