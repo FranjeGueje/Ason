@@ -47,28 +47,28 @@ Sí. Aunque se recomienda esa ubicación, Asón es portable y debería de poder 
 ## ¿Cómo se ejecuta?
 Tienes tres formas de ejecutar Asón:
 * Doble clic en **Ason.desktop**. _RECOMENDADO_
-* Desde la línea de comandos, ejecuta: `Anson.sh`
-* Desde la línea de comandos, puedes ejecutar cada comando de Anson/Nile como un profesional. _Para usuarios experimentados_
+* Desde la línea de comandos, ejecuta: `Ason.sh`
+* Desde la línea de comandos, puedes ejecutar cada comando de Ason/Nile como un profesional. _Para usuarios experimentados_
 
 ## ¿Dónde se instalan los juegos?
-Por defecto Ansón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile". Es decir, en SteamOS en **/home/deck/Games/nile**
+Por defecto Asón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile". Es decir, en SteamOS en **/home/deck/Games/nile**
 
 ## ¿Se puede cambiar la ubicación de instalación de videojuegos?
 Sí, desde el menú de opciones.
 
 ## ¿Cómo se desinstala? No quiero ningún resto.
 Simple. Para desinstalalar Ansó únicamente borra las carpetas con sus subcarpetas y ficheros:
-* $HOME/Anson
+* $HOME/Ason
 * $HOME/.config/nile
 
 ## Parece que sacas versiones continuamente, que estás mejorándolo, ¿como me actualizo a la última versión?
-Fácil, borra la carpeta de Ansón (recuerda, la carpeta por defecto está en $HOME/Anson) y lanza el comando de instalación desde un terminal/consola. Se volverá a descargar la última versión.
+Fácil, borra la carpeta de Asón (recuerda, la carpeta por defecto está en $HOME/Ason) y lanza el comando de instalación desde un terminal/consola. Se volverá a descargar la última versión.
 
 ## He visto que lo has ejecutado desde el GAMEMODE de Steam Deck, ¿cómo lo hago yo?
 Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado a hacer... Los parámetros que tienes que ponerle son:
 - Comando a ejecutar: `"/usr/bin/xterm"`
-- Ubicación: `"/home/deck/Anson"` (o donde tengas Ansón)
-- Parámetros: `-e "/home/deck/Anson/Anson.sh"` (o donde tengas Ansón)
+- Ubicación: `"/home/deck/Ason"` (o donde tengas Ansón)
+- Parámetros: `-e "/home/deck/Ason/Ason.sh"` (o donde tengas Ansón)
 
 # TODO
 - Mejorar Wizard para ejecutar juegos en bottles. En versión 2.
