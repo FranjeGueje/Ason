@@ -5,7 +5,7 @@ Esta utilidad **querrá** ser un frontend, GUI o asistente para Amazon Games Lau
 
 Actualmente es una utilidad que descarga y crea un entorno portable de fácil accesibilidad. Perfecto para **SteamOS** que es el entorno en el que se quiere enfocar esta herramienta.
 
-Es totalmente funcional a través de comandos _**nile**_ pero no a través de un asistente que es su objetivo.
+Es totalmente funcional a través de comandos _**nile**_, en esta herramienta: `Ason-cli.sh` y se van implementando a través del asistente [que es su objetivo].
 
 ## ¿Por qué el nombre de Asón? (Si el autor es de Murcia)
 Amazon Games tiene nombre de río.
@@ -51,10 +51,10 @@ Tienes tres formas de ejecutar Asón:
 * Desde la línea de comandos, puedes ejecutar cada comando de Anson/Nile como un profesional. _Para usuarios experimentados_
 
 ## ¿Dónde se instalan los juegos?
-Por defecto Ansón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile"
+Por defecto Ansón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile". Es decir, en SteamOS en **/home/deck/Games/nile**
 
 ## ¿Se puede cambiar la ubicación de instalación de videojuegos?
-Actualmente no... se trabajará para dar opciones en las próximas versiones.
+Sí, desde el menú de opciones.
 
 ## ¿Cómo se desinstala? No quiero ningún resto.
 Simple. Para desinstalalar Ansó únicamente borra las carpetas con sus subcarpetas y ficheros:
@@ -71,7 +71,6 @@ Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado
 - Parámetros: `-e "/home/deck/Anson/Anson.sh"` (o donde tengas Ansón)
 
 # TODO
-- Cambiar ubiciación de instalación.
 - Mejorar Wizard para ejecutar juegos en bottles. En versión 2.
 - Avisar de que el juego tiene dependencias de terceros. En versión 2.
 - ¿Instalar las dependencias de terceros en bottles? ¿En versión 2?
