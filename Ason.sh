@@ -214,7 +214,7 @@ function menuSincronizar() {
 
 # Función para mostrar el menu menuOpciones
 function menuOpciones() {
-    OPCION=$($D "MENU PRINCIPAL" \
+    OPCION=$($D "MENU OPCIONES" \
         --stdout \
         --menu "Selecciona la opcion a realizar:" 10 50 0 \
         C "Cambiar ruta de instalacion" \
