@@ -51,7 +51,6 @@ function entrar() {
     RUTAINSTALL="$HOME/Games/nile"
     [ -f "$CONFIGRUTA" ] && read -r RUTAINSTALL <"$CONFIGRUTA"
 
-    echo $RUTAINSTALL
     # Bienvenido!
     $D "Bienvenido a ASON" --infobox "$BIENVENIDA" 10 45
     sleep 1
@@ -132,6 +131,7 @@ function menuInstalar() {
         TOTAL=$(echo "$RUN" | wc -w)
         n=1
 
+        [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
         for i in $RUN; do
             ID=$($JQ ".[$i].id" "$LIBRARY")
             EJECUTAR="$NILE install $ID --base-path $RUTAINSTALL"
@@ -160,6 +160,7 @@ function menuDesinstalar() {
         RUN=$($D "SELECCION" --stdout \
             --radiolist "Selecciona el juego a desinstalar..." 0 0 0 "${LISTA[@]}")
 
+        [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
         if [ -n "$RUN" ]; then
             ID=$($JQ ".[$RUN].id" "$INSTALLED")
             EJECUTAR="$NILE uninstall $ID"
@@ -189,8 +190,9 @@ function menuActualizar() {
         TOTAL=$(echo "$RUN" | wc -w)
         n=1
 
+        [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
         for i in $RUN; do
-            ID=$($JQ ".[$i].id" "$LIBRARY")
+            ID=$($JQ ".[$i].id" "$INSTALLED")
             EJECUTAR="$NILE update $ID"
             echo $((n * 100 / TOTAL)) | $D "Actualizando $($JQ .["$i"].product.title "$LIBRARY")" --gauge "Espere..." 10 60 0
             ((n++))
@@ -203,6 +205,7 @@ function menuActualizar() {
 
 # Función para mostrar el menu menuSincronizar
 function menuSincronizar() {
+    
     $D "Sincronizar Biblioteca" --msgbox "Se procedera a sincronizar la biblioteca de Amazon Games con Ason.\nPulse OK y espere." 0 0
     $NILE library sync 2>"$SALIDATEMP"
 
