@@ -194,7 +194,7 @@ function menuActualizar() {
         for i in $RUN; do
             ID=$($JQ ".[$i].id" "$INSTALLED")
             EJECUTAR="$NILE update $ID"
-            echo $((n * 100 / TOTAL)) | $D "Actualizando $($JQ .["$i"].product.title "$INSTALLED")" --gauge "Espere..." 10 60 0
+            echo $((n * 100 / TOTAL)) | $D "Actualizando $n de $TOTAL" --gauge "Espere..." 10 60 0
             ((n++))
             temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
         done
