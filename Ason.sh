@@ -165,17 +165,26 @@ PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella 
                     --stdout \
                     --menu "Instalar dependencias?" 8 100 0 \
                     N "Lanzar el juego directamente. (BOTTLES)" \
-                    Y "Instalar en (BOTTLES) las dependencias del juego [Hazlo al menos una vez].")
+                    Y "[DEPENDENCIAS] Instalar en BOTTLES las dependencias del juego [Hazlo al menos una vez]." \
+                    A "***EXPERIMENTAL*** Metodo alternativo para ejecutar. (Busca todos los .exe y los corre)")
                 case "$OPCION" in
                 N)
                     echo -ne "--> Lanzamos el juego directamente\n"
-                    $NILE launch -b Ason "$ID"
+                    # Este es el método de nile. La cosa, es que nile falla en muchos juegos, por eso lo deshabilito.
+                    NILE launch -b Ason "$ID"
                     ;;
                 Y)
                     echo -ne "--> Lanzamos la instalacion dependencias del juegos."
                     find "$($JQ -r .["$RUN"].path "$INSTALLED")/dependencies/" -name "*.exe" -exec \
-                    flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
+                        flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
                     ;;
+                A)
+                    echo -ne "--> Lanzamos el modo alternativo, corremos todos los .exe\n"
+                    # Este es mi método que parece ser que funciona en algunas situaciones donde nile falla.
+                    find "$($JQ -r .["$RUN"].path "$INSTALLED")" -maxdepth 3 -type f -name "*.exe" -not -path '*/dependencies/*' -exec \
+                        flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
+                    ;;
+
                 *)
                     echo -ne "--> Volviendo al menu anterior"
                     ;;
