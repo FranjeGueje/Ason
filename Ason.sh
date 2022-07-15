@@ -166,12 +166,13 @@ PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella 
                     --menu "Instalar dependencias?" 8 100 0 \
                     N "Lanzar el juego directamente. (BOTTLES)" \
                     Y "[DEPENDENCIAS] Instalar en BOTTLES las dependencias del juego [Hazlo al menos una vez]." \
-                    A "***EXPERIMENTAL*** Metodo alternativo para ejecutar. (Busca todos los .exe y los corre)")
+                    A "***EXPERIMENTAL*** Metodo alternativo para ejecutar. (Busca todos los .exe y los corre)" \
+                    B "Lanza la botella directamente y busca el exe tu mismo.")
                 case "$OPCION" in
                 N)
                     echo -ne "--> Lanzamos el juego directamente\n"
                     # Este es el método de nile. La cosa, es que nile falla en muchos juegos, por eso lo deshabilito.
-                    NILE launch -b Ason "$ID"
+                    $NILE launch -b Ason "$ID"
                     ;;
                 Y)
                     echo -ne "--> Lanzamos la instalacion dependencias del juegos."
@@ -183,6 +184,13 @@ PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella 
                     # Este es mi método que parece ser que funciona en algunas situaciones donde nile falla.
                     find "$($JQ -r .["$RUN"].path "$INSTALLED")" -maxdepth 3 -type f -name "*.exe" -not -path '*/dependencies/*' -exec \
                         flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
+                    ;;
+                B)
+                    echo -ne "--> Lanzamos la botella, corremos todos los .exe\n"
+                    # Este es mi método que parece ser que funciona en algunas situaciones donde nile falla.
+                    find "$($JQ -r .["$RUN"].path "$INSTALLED")" -maxdepth 3 -type f -name "*.exe" -not -path '*/dependencies/*' -exec \
+                        flatpak run --command=bottles-cli com.usebottles.bottles add -b Ason -n "$(basename {})" -p {} \;
+                        flatpak run com.usebottles.bottles
                     ;;
 
                 *)
