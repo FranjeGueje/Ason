@@ -185,16 +185,17 @@ se mostraran un listado de los PROTON encontrados en el dispositivo." 0 0
                 D "[DEPENDENCIAS] - Instalar las dependencias del juego [Hazlo al menos una vez]." \
                 P "[OPCIONES DEL JUEGO] - Configura Proton y variables para este juego.")
 
+            ASONPATH="$($JQ -r .["$RUN"].path "$INSTALLED")/Ason"
+
+            [ ! -d "$ASONPATH" ] && mkdir -p "$ASONPATH"
+            [ ! -f "$ASONPATH/exe" ] && echo -ne "Crear menu para elegir .exe"
+
+            export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/"
+
             case "$OPCION" in
             R)
-                #STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
-                #    STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/compatdata" \
-                #    "$PROTON" run "Blasphemous.exe"
-                wget --help
-                7z --help
-                cabextract --help
-                winetricks --help
-                sleep 100
+                EXE=$(cat "$EXE")
+                STEAM_COMPAT_DATA_PATH="$ASONPATH" WINEPREFIX="$ASONPATH/pfx" "$PROTON" run "$EXE"
                 ;;
             D)
                 LISTA=()
@@ -204,7 +205,7 @@ se mostraran un listado de los PROTON encontrados en el dispositivo." 0 0
 
                 for i in "${LISTA[@]}"; do
                     STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
-                        STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/compatdata" \
+                        STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/Ason" \
                         "$PROTON" run "$i"
                 done
                 ;;
