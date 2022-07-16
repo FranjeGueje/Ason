@@ -30,7 +30,7 @@ function entrar() {
     # Importamos las librerías necesarias del dialog "portable"
     LD_LIBRARY_PATH="$(pwd)/util/lib"
     export LD_LIBRARY_PATH
-    DIALOG="$$(pwd)/util/dialog"
+    DIALOG="$(pwd)/util/dialog"
 
     PATH="$PATH:$(pwd)/util"
 
@@ -187,9 +187,14 @@ se mostraran un listado de los PROTON encontrados en el dispositivo." 0 0
 
             case "$OPCION" in
             R)
-                STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
-                    STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/compatdata" \
-                    "$PROTON" run "Blasphemous.exe"
+                #STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
+                #    STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/compatdata" \
+                #    "$PROTON" run "Blasphemous.exe"
+                wget --help
+                7z --help
+                cabextract --help
+                winetricks --help
+                sleep 100
                 ;;
             D)
                 LISTA=()
