@@ -47,7 +47,8 @@ function entrar() {
     # Otras variables
     SALIDATEMP=/tmp/Ason.tmp
     TEMPIDNAME=/tmp/AsonID-Name.txt
-    CONFIGRUTA="$HOME/.config/nile/installPath.txt"
+    CONFIGRUTA="$HOME/.config/nile/ASON-installPath.cfg"
+    PROTONGENERAL="$HOME/.config/nile/ASON-proton.cfg"
     RUTAINSTALL="$HOME/Games/nile"
     [ -f "$CONFIGRUTA" ] && read -r RUTAINSTALL <"$CONFIGRUTA"
 
@@ -77,12 +78,12 @@ function menuPrincipal() {
     OPCION=$($D "MENU PRINCIPAL" \
         --stdout \
         --menu "Selecciona la opcion a realizar:" 10 50 0 \
-        J "Jugar a un juego instalado. (BOTTLES)" \
+        J "Jugar a un juego instalado. (PROTON)" \
         I "Instalar un juego." \
         D "Desinstalar un juego instalado." \
         A "Actualizar un juego instalado." \
         S "Sincronizar Biblioteca." \
-        O "Opciones.")
+        O "Opciones y Cuenta.")
 }
 
 # Función para efectuar la opcion
@@ -105,7 +106,7 @@ function ejecutarOpcion() {
         echo -ne "--> Entrando en menú de SINCRONIZACION" && menuSincronizar
         ;;
     O)
-        echo -ne "--> Entrando en menú de OPCIONES" && menuOpciones
+        echo -ne "--> Entrando en menú de OPCIONES de Cuenta" && menuOpciones
         ;;
     *)
         $D "Desea Salir?" --stdout --yesno "Esta seguro que desea salir?\n\n\nElige tu respuesta..." 15 50
@@ -121,83 +122,128 @@ function ejecutarOpcion() {
 
 # Función para ejecutar un juego a través de bottles
 function menuEjecutar() {
-    # ¿Tenemos instalado bottles?
-    flatpak run --command=bottles-cli com.usebottles.bottles --help >/dev/null
-    ans=$?
-    if [ ! "$ans" -eq 0 ]; then
-        $D "Error" --infobox "Sin bottles instalado. Por favor, para usar esta funcionalidad, debes de instalar bottles desde discover." 0 0
-        sleep 3
+    # ¿Tenemos seleccinado algún PROTON?
+    if [[ ! -f "$PROTONGENERAL" ]] || [[ ! -f "$(head -1 "$PROTONGENERAL")" ]]; then
+        echo -ne "El proton no existe o no está correcto. Es necesario elegir uno por defecto."
+        $D "Sin PROTON" --msgbox "Es necesario elegir una version de PROTON por defecto.\n\nA continuacion \
+se mostraran un listado de los PROTON encontrados en el dispositivo." 0 0
+        RETURN=
+        while [ -z "$RETURN" ]; do
+            # Menu elección de proton.
+            menuProton
+            # En RETURN el valor devuelto
+            if [ -z "$RETURN" ]; then
+                $D "Sin elegir PROTON" --yesno "No has seleccionado ninguna version de Protonn.\nQuiere volver a selecionar una version?" 0 0
+                ans=$?
+                if [ ! $ans -eq 0 ]; then
+                    RETURN=999
+                fi
+            fi
+        done
+
+        case "$RETURN" in
+        888)
+            $D "Error" --msgbox "Sin version de PROTON instalada.\nPor favor, instala una version para poder ejectuar juegos desde ASON." 0 0
+            return
+            ;;
+        999)
+            $D "Error" --msgbox "No se ha seleccionado version de PROTON.\nPor favor, selecciona una version para poder ejectuar juegos desde ASON." 0 0
+            return
+            ;;
+        *)
+            # Grabamos el proton como proton por defecto
+            echo "$RETURN" | tee "$PROTONGENERAL"
+            ;;
+        esac
+
+    fi
+    # Tenemos proton bueno!
+    PROTON="$(cat "$PROTONGENERAL")"
+    # Mostramos los juegos instalados en un menú.
+    NUM=$($JQ ". | length" "$INSTALLED")
+    if [ "$NUM" == 0 ]; then
+        $D "Sin juegos instalados" --infobox "No se encuentran juegos instalados.\n\nInstala alguno para entrar a este menu." 0 0 && sleep 3
     else
-        # Existe la botella Ason ¿? Si no, hay que crearla
-        ans=$(flatpak run --command=bottles-cli com.usebottles.bottles list bottles | grep -c Ason)
-        if [ "$ans" -eq 0 ]; then
-            $D "Botella sin crear" --stdout --yesno "No tiene creada la botella llamada Ason. Desea crearla? (es necesaria)" 15 50
-            ans=$?
-            if [ $ans -eq 0 ]; then
-                #$D "Creando la botella." --infobox "Espere...\n Tarda aproximadamente 1 minuto o mas." 0 0
-                #flatpak run --command=bottles-cli com.usebottles.bottles new --bottle-name Ason --environment gaming
-                $D "No puedo continuar. Funcion no disponible aun" --msgbox "Sin implementar la funcion de crear la botella.\n\n\
-PROXIMAMENTE SE PODRA CREAR LA BOTELLA DESDE AQUI\n\nDebes de crear una botella llamada Ason desde bottles antes de usar esta funcionalidad." 0 0
-            else
-                echo "NO quiero crear la botella."
-                return
-            fi
+        LISTA=()
+        for ((i = 0; i < NUM; i++)); do
+            ID=$($JQ -r ".[$i].id" "$INSTALLED")
+            NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
+            LISTA+=("$i" "$NOMBRE" "off")
+        done
+        RUN=$($D "SELECCION" --stdout \
+            --radiolist "Selecciona el juego a ejecutar..." 0 0 0 "${LISTA[@]}")
+
+        if [ -n "$RUN" ]; then
+            ID=$($JQ -r ".[$RUN].id" "$INSTALLED")
+            # En ID tenemos el id del juego seleccionado.
+            OPCION=$($D "MENU DE EJECUCION para $NOMBRE" \
+                --stdout \
+                --menu "Instalar dependencias?" 8 100 0 \
+                R "[CORRER JUEGO] - Lanzar el juego. (Puedes configurar el modo en Opciones." \
+                D "[DEPENDENCIAS] - Instalar las dependencias del juego [Hazlo al menos una vez]." \
+                P "[OPCIONES DEL JUEGO] - Configura Proton y variables para este juego.")
+
+            case "$OPCION" in
+            R)
+                STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
+                    STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/compatdata" \
+                    "$PROTON" run "Blasphemous.exe"
+                ;;
+            D)
+                LISTA=()
+                while IFS= read -r -d $'\0'; do
+                    LISTA+=("$REPLY")
+                done < <(find "$($JQ -r .["$RUN"].path "$INSTALLED")/dependencies/" -name "*.exe" -print0)
+
+                for i in "${LISTA[@]}"; do
+                    STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
+                        STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/compatdata" \
+                        "$PROTON" run "$i"
+                done
+                ;;
+            P)
+                echo -ne "--> Lanzamos las opciones del juego en concreto\n"
+                # Menu de opciones
+                sleep 3
+                ;;
+            *)
+                echo -ne "--> Volviendo al menu anterior"
+                ;;
+            esac
+            OPCION=""
         fi
-        echo Ya tenemos instalada la botella Ason creada.
-        # Mostramos los juegos instalados en un menú.
-        NUM=$($JQ ". | length" "$INSTALLED")
-        if [ "$NUM" == 0 ]; then
-            echo "Salimos."
+    fi
+}
+
+function menuProton() {
+    # Devolverá en una variable llamada RETURN el proton elegido. Si se cancela o no existen será null
+    LISTAP=()
+    LISTA=()
+    while IFS= read -r -d $'\0'; do
+        LISTAP+=("$REPLY")
+    done < <(find "$HOME/.local/share/Steam/compatibilitytools.d/" -name "proton" -print0)
+    while IFS= read -r -d $'\0'; do
+        LISTAP+=("$REPLY")
+    done < <(find "$HOME/.local/share/Steam/steamapps/common/" -name "proton" -print0)
+
+    j=0
+    for i in "${LISTAP[@]}"; do
+        LISTA+=("$j" "$i" "off")
+        ((j++))
+    done
+
+    if [ ${#LISTAP[@]} -eq 0 ]; then
+        RETURN=888
+    else
+        RUN=
+        RUN=$($D "SELECCION" --stdout \
+            --radiolist "Selecciona el la version de PROTON a usar" 0 0 0 "${LISTA[@]}")
+
+        #echo -ne "Elegido este ${LISTAP[$RUN]}"
+        if [ -z "$RUN" ]; then
+            RETURN=
         else
-            LISTA=()
-            for ((i = 0; i < NUM; i++)); do
-                ID=$($JQ -r ".[$i].id" "$INSTALLED")
-                NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
-                LISTA+=("$i" "$NOMBRE" "off")
-            done
-            RUN=$($D "SELECCION" --stdout \
-                --radiolist "Selecciona el juego a ejecutar..." 0 0 0 "${LISTA[@]}")
-
-            if [ -n "$RUN" ]; then
-                ID=$($JQ -r ".[$RUN].id" "$INSTALLED")
-                # En ID tenemos el id del juego seleccionado.
-                OPCION=$($D "MENU DE EJECUCION para $NOMBRE" \
-                    --stdout \
-                    --menu "Instalar dependencias?" 8 100 0 \
-                    N "Lanzar el juego directamente. (BOTTLES)" \
-                    Y "[DEPENDENCIAS] Instalar en BOTTLES las dependencias del juego [Hazlo al menos una vez]." \
-                    A "***EXPERIMENTAL*** Metodo alternativo para ejecutar. (Busca todos los .exe y los corre)" \
-                    B "Lanza la botella directamente y busca el exe tu mismo.")
-                case "$OPCION" in
-                N)
-                    echo -ne "--> Lanzamos el juego directamente\n"
-                    # Este es el método de nile. La cosa, es que nile falla en muchos juegos, por eso lo deshabilito.
-                    $NILE launch -b Ason "$ID"
-                    ;;
-                Y)
-                    echo -ne "--> Lanzamos la instalacion dependencias del juegos."
-                    find "$($JQ -r .["$RUN"].path "$INSTALLED")/dependencies/" -name "*.exe" -exec \
-                        flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
-                    ;;
-                A)
-                    echo -ne "--> Lanzamos el modo alternativo, corremos todos los .exe\n"
-                    # Este es mi método que parece ser que funciona en algunas situaciones donde nile falla.
-                    find "$($JQ -r .["$RUN"].path "$INSTALLED")" -maxdepth 3 -type f -name "*.exe" -not -path '*/dependencies/*' -exec \
-                        flatpak run --command=bottles-cli com.usebottles.bottles run -b Ason -e {} \;
-                    ;;
-                B)
-                    echo -ne "--> Lanzamos la botella, corremos todos los .exe\n"
-                    # Este es mi método que parece ser que funciona en algunas situaciones donde nile falla.
-                    find "$($JQ -r .["$RUN"].path "$INSTALLED")" -maxdepth 3 -type f -name "*.exe" -not -path '*/dependencies/*' -exec \
-                        flatpak run --command=bottles-cli com.usebottles.bottles add -b Ason -n "$(basename {})" -p {} \;
-                        flatpak run com.usebottles.bottles
-                    ;;
-
-                *)
-                    echo -ne "--> Volviendo al menu anterior"
-                    ;;
-                esac
-            fi
+            RETURN="${LISTAP[$RUN]}"
         fi
     fi
 
@@ -303,9 +349,9 @@ function menuOpciones() {
     OPCION=$($D "MENU OPCIONES" \
         --stdout \
         --menu "Selecciona la opcion a realizar:" 10 50 0 \
-        C "Cambiar ruta de instalacion" \
-        L "Logout en Amazon Games" \
-        G "Forzar hacer login en Amazon Games")
+        C "Cambiar ruta de instalacion." \
+        L "Logout en Amazon Games." \
+        G "Volver a hacer login en Amazon Games.")
 
     # Opciones y menus
     case "$OPCION" in
