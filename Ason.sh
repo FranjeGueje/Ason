@@ -28,9 +28,11 @@ function entrar() {
     read -r VERSION <CHANGELOG.md
     # ENTORNO DE DIALOG
     # Importamos las librerías necesarias del dialog "portable"
-    LD_LIBRARY_PATH="$(pwd)/dialog"
+    LD_LIBRARY_PATH="$(pwd)/util/lib"
     export LD_LIBRARY_PATH
-    DIALOG="$LD_LIBRARY_PATH/dialog"
+    DIALOG="$$(pwd)/util/dialog"
+
+    PATH="$PATH:$(pwd)/util"
 
     # Variable de ejecución para acortar las intrucciones de 'dialog'
     BIENVENIDA='Bienvenido a ASON\n\n([A]mazon on [S]teamOS [O]ver [N]ile)'
@@ -42,7 +44,7 @@ function entrar() {
     USER="$HOME/.config/nile/user.json"
     INSTALLED="$HOME/.config/nile/installed.json"
     LIBRARY="$HOME/.config/nile/library.json"
-    JQ="$(pwd)/jq/jq-1.6-linux64"
+    JQ="$(pwd)/util/jq-1.6-linux64"
 
     # Otras variables
     SALIDATEMP=/tmp/Ason.tmp
