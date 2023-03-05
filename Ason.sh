@@ -69,7 +69,7 @@ function salir() {
 # Función para hacer login
 function dologin() {
     # Haciendo login
-    $NILE auth --login
+    $NILE auth --login --no-sandbox
 }
 
 # Función con el menú principal
