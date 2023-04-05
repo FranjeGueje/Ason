@@ -24,9 +24,18 @@ NILEUSER="$HOME/.config/nile/user.json"
 NILELIBR="$HOME/.config/nile/library.json"
 NILEINSTALLED="$HOME/.config/nile/installed.json"
 
+# Where is the app and binaries
+ASONPATH=$(readlink -f "$(dirname "$0")")
+ASONBIN="$ASONPATH/bin"
+ASONCACHE="$HOME/.cache/ason/"
+YAD="$ASONBIN/yad"
+NILE="$ASONBIN/nile"
+JQ="$ASONBIN/jq"
+
 # Configs of Ason
-ASONLIBRARYFILE="$HOME/.config/nile/ason.library"
-ALIB=()
+ASONTITFILE="$ASONCACHE""/ason.tit"; ATIT=()
+ASONIMGFILE="$ASONCACHE""/ason.img"; AIMG=()
+ASONGENFILE="$ASONCACHE""/ason.gen"; AGEN=()
 
 # Where is Steam, compatdata,shadercache, and grid
 STEAM="$HOME/.local/share/Steam"
@@ -44,13 +53,6 @@ Name=Ason\n\
 Exec=\"$(readlink -f "$0")\"\n\
 Terminal=false\n\
 Type=Application\n"
-
-# Where is the app and binaries
-ASONPATH=$(readlink -f "$(dirname "$0")")
-ASONBIN="$ASONPATH/bin"
-YAD="$ASONBIN/yad"
-NILE="$ASONBIN/nile"
-JQ="$ASONBIN/jq"
 
 # IMG dir
 ASONIMAGES="$ASONPATH/img/"
@@ -97,7 +99,7 @@ function getCache()
     local __url=$1
     local __file=$2
 
-    [ -f "$__file" ] || wget "$__url" -O "$__file" &
+    [ -f "$__file" ] || wget "$__url" -O "$__file" > /dev/null 2> /dev/null &
 }
 
 ##
@@ -169,31 +171,37 @@ function dologin()
 #
 function cache()
 {
-    if [ ! -f "$ASONLIBRARYFILE" ];then
-        ALIB=()
+    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ];then
+        ATIT=();AGEN=();AIMG=()
         local __num=
         __num=$($JQ ". | length" "$NILELIBR")
         local __url=
         local __file=
+        [ -d "$ASONCACHE" ] || mkdir -p "$ASONCACHE"
         for ((i = 0; i < __num; i++)); do
-            #! indice + img + titulo + Genero
             __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
-            __file="$HOME/.cache/ason/$(basename "$__url")"
+            __file="$ASONCACHE/$(basename "$__url")"
             [ -f "$__file" ] || getCache "$__url" "$__file"
-            ALIB+=("$i" "$__file" "$($JQ -r ".[$i].product.title" "$NILELIBR")" "$($JQ -r \
-".[$i].product.productDetail.details.genres[0]" "$NILELIBR")")
+            ATIT+=( "$($JQ -r ".[$i].product.title" "$NILELIBR")" )
+            AGEN+=( "$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR")" )
+            AIMG+=( "$__file" )
         done
-
         local __serialized=
-        serialize_array ALIB __serialized '|'
-        echo "$__serialized" > "$ASONLIBRARYFILE"
-    
+        serialize_array ATIT __serialized '|'
+        echo "$__serialized" > "$ASONTITFILE"
+        serialize_array AGEN __serialized '|'
+        echo "$__serialized" > "$ASONGENFILE"
+        serialize_array AIMG __serialized '|'
+        echo "$__serialized" > "$ASONIMGFILE"
     else
         local __serialized=
-        __serialized="$(cat "$ASONLIBRARYFILE")"
-        deserialize_array __serialized ALIB '|'
+        __serialized="$(cat "$ASONTITFILE")"
+        deserialize_array __serialized ATIT '|'
+        __serialized="$(cat "$ASONGENFILE")"
+        deserialize_array __serialized ATIT '|'
+        __serialized="$(cat "$ASONIMGFILE")"
+        deserialize_array __serialized AIMG '|'
     fi
-    
 }
 
 ##
@@ -205,7 +213,7 @@ function loading()
     local __pid    
     
     # splash Window
-    "$YAD" "$TITTLE" --center --splash --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons & __pid=$!
+    "$YAD" "$TITTLE" --center --splash --no-escape --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons & __pid=$!
 
     cache
 
@@ -231,12 +239,16 @@ function mainW()
 # Show the LIBRARY Window
 #
 function libraryW()
-{
+{            #! indice + img + titulo + Genero
+
     ALIB=()
-    if [ ${#ALIB[@]} -eq 0 ]; then
-        # Recaching
-        loading
-    fi
+    local __num=
+    __num=$($JQ ". | length" "$NILELIBR")
+    
+    for ((i = 0; i < __num; i++)); do
+        ALIB+=( "$i" "${AIMG[$i]}" "${ATIT[$i]}" "${AGEN[$i]}" )
+    done
+
     "$YAD" "$TITTLE" "$ICON" --list --with=900 --height=900 --hide-column=1 --column=ID --column=Juego:IMG --column=Titulo --column=Genero \
     "${ALIB[@]}"
 sleep 333
