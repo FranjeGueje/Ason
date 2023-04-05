@@ -16,7 +16,7 @@
 ##         GLOBAL VARIABLES 
 #########################################
 # Basic
-NOMBRE="[A]mazon Game[S] [O]ver [N]ile"
+NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
 VERSION=2.0.0
 
 # Configs of nile
@@ -186,6 +186,7 @@ function cache()
             AGEN+=( "$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR")" )
             AIMG+=( "$__file" )
         done
+
         local __serialized=
         serialize_array ATIT __serialized '|'
         echo "$__serialized" > "$ASONTITFILE"
@@ -198,7 +199,7 @@ function cache()
         __serialized="$(cat "$ASONTITFILE")"
         deserialize_array __serialized ATIT '|'
         __serialized="$(cat "$ASONGENFILE")"
-        deserialize_array __serialized ATIT '|'
+        deserialize_array __serialized AGEN '|'
         __serialized="$(cat "$ASONIMGFILE")"
         deserialize_array __serialized AIMG '|'
     fi
@@ -244,13 +245,16 @@ function libraryW()
     ALIB=()
     local __num=
     __num=$($JQ ". | length" "$NILELIBR")
+
+    echo "${ATIT[@]}"
     
     for ((i = 0; i < __num; i++)); do
         ALIB+=( "$i" "${AIMG[$i]}" "${ATIT[$i]}" "${AGEN[$i]}" )
     done
 
-    "$YAD" "$TITTLE" "$ICON" --list --with=900 --height=900 --hide-column=1 --column=ID --column=Juego:IMG --column=Titulo --column=Genero \
-    "${ALIB[@]}"
+    "$YAD" "$TITTLE" "$ICON" --center --width=1024 --height=1024 --list --hide-column=1 \
+    --column=ID --column=Juego:IMG --column=Titulo --column=Genero "${ALIB[@]}"
+
 sleep 333
     TOTAL=$(echo "$RUN" | wc -w)
     n=1
