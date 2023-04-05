@@ -1,458 +1,331 @@
-#! /bin/bash
-
+#!/bin/bash
 ##############################################################################################################################################################
 # AUTOR: Paco Guerrero <fjgj1@hotmail.com>
-# NOMBRE DEL PROYECTO: ASON (Amazon on SteamOS Over Nile)
-# ABOUT: script con objetivo de mostrar una interface, es decir, un frontend para el cliente de linux no oficial de Amazon Games llamado 'nile'
+# PROJECT: ASON (Amazon on SteamOS Over Nile)
+# ABOUT: script with the objective of displaying an interface, i.e. a frontend for the unofficial Amazon Games linux client called 'nile'.
 #
-# PARÁMETRO: No tiene.
+# PARAMS: Nope.
 #
-# REQUISITOS: No tiene más allá de los requeridos por el proyecto global ASON.
+# REQUERIMENTS: It does not have more than those required by the NILE project.
 #
 # EXITs:
-# 0 --> Salida correcta.
-# 1 --> Necesitas revisar el comando. Se sale tras mostrar la ayuda.
-# 2 --> Usas -S, -C o -K conjutamente.
-# 3 --> El directorio de script no existe.
-# 4 --> El usuario no tiene una contraseña en blanco y para el caso es necesario
-# 88 -> No se encuntra la utilidad dialog y se necesita
+# 0 --> OK!!!.
 ##############################################################################################################################################################
 
-#
-# FUNCIONES PARA EL DESARROLLO DE LA APLICACION
-#
+#########################################
+##         GLOBAL VARIABLES 
+#########################################
+# Basic
+NOMBRE="[A]mazon Game[S] [O]ver [N]ile"
+VERSION=2.0.0
 
-# Función con los procedimientos a realizar antes de comenzar el programa
-function entrar() {
-    # Recuperamos version actual
-    read -r VERSION <CHANGELOG.md
-    # ENTORNO DE DIALOG
-    # Importamos las librerías necesarias del dialog "portable"
-    LD_LIBRARY_PATH="$(pwd)/util/lib"
-    export LD_LIBRARY_PATH
-    DIALOG="$(pwd)/util/dialog"
+# Configs of nile
+NILEUSER="$HOME/.config/nile/user.json"
+NILELIBR="$HOME/.config/nile/library.json"
+NILEINSTALLED="$HOME/.config/nile/installed.json"
 
-    PATH="$PATH:$(pwd)/util"
+# Configs of Ason
+ASONLIBRARYFILE="$HOME/.config/nile/ason.library"
+ALIB=()
 
-    # Variable de ejecución para acortar las intrucciones de 'dialog'
-    BIENVENIDA='Bienvenido a ASON\n\n([A]mazon on [S]teamOS [O]ver [N]ile)'
-    DESPEDIDA='Gracias por utilizar ASON\n\n([A]mazon on [S]teamOS [O]ver [N]ile)'
-    D="$DIALOG --backtitle ASON-[A]mazon.on.[S]teamOS.[O]ver.[N]ile-$VERSION --title "
+# Where is Steam, compatdata,shadercache, and grid
+STEAM="$HOME/.local/share/Steam"
+COMPATDATA="$STEAM/steamapps/compatdata"
+SHADERCACHE="$STEAM/steamapps/shadercache"
+DIRGRID="$STEAM/userdata/??*/config/grid/"
 
-    # ENTORNO NILE
-    NILE="$(pwd)/Ason-cli.sh"
-    USER="$HOME/.config/nile/user.json"
-    INSTALLED="$HOME/.config/nile/installed.json"
-    LIBRARY="$HOME/.config/nile/library.json"
-    JQ="$(pwd)/util/jq-1.6-linux64"
+# Desktop file
+DESKTOP_NAME_FILE="$HOME/.local/share/applications"
+ENTRY_DESKTOP="[Desktop Entry]\nIcon="
 
-    # Otras variables
-    SALIDATEMP=/tmp/Ason.tmp
-    TEMPIDNAME=/tmp/AsonID-Name.txt
-    CONFIGRUTA="$HOME/.config/nile/ASON-installPath.cfg"
-    PROTONGENERAL="$HOME/.config/nile/ASON-proton.cfg"
-    RUTAINSTALL="$HOME/Games/nile"
-    [ -f "$CONFIGRUTA" ] && read -r RUTAINSTALL <"$CONFIGRUTA"
+# Startup content
+CONTENT_DESKTOP="[Desktop Entry]\n\
+Name=Ason\n\
+Exec=\"$(readlink -f "$0")\"\n\
+Terminal=false\n\
+Type=Application\n"
 
-    # Bienvenido!
-    $D "Bienvenido a ASON" --infobox "$BIENVENIDA" 10 45
-    sleep 1
-}
+# Where is the app and binaries
+ASONPATH=$(readlink -f "$(dirname "$0")")
+ASONBIN="$ASONPATH/bin"
+YAD="$ASONBIN/yad"
+NILE="$ASONBIN/nile"
+JQ="$ASONBIN/jq"
 
-# Función con los procedimientos a realizar antes de salir
-function salir() {
-    # Hasta luego!
-    $D "Hasta pronto" --infobox "$DESPEDIDA" 10 45
+# IMG dir
+ASONIMAGES="$ASONPATH/img/"
+ASONSIMGPLASH="$ASONIMAGES/splash/"
+ASONIMGMAIN="$ASONIMAGES/main/"
+ASONLOGO="$ASONIMAGES/Ason_64.jpeg"
+ASONWARNING="$ASONIMAGES/warning.png"
 
-    [ -f "$TEMPIDNAME" ] && rm -f "$TEMPIDNAME"
-    [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
-    sleep 1
-}
+#* Tittle and share Window components
+#TITTLE="--title=\"[A]mazon Game[S] [O]ver [N]ile\""
+TITTLE="--title=$NOMBRE - $VERSION"
+ICON="--window-icon=$ASONLOGO"
 
-# Función para hacer login
-function dologin() {
-    # Haciendo login
-    $NILE auth --login
-}
-
-# Función con el menú principal
-function menuPrincipal() {
-    OPCION=$($D "MENU PRINCIPAL" \
-        --stdout \
-        --menu "Selecciona la opcion a realizar:" 10 50 0 \
-        J "Jugar a un juego instalado. (PROTON)" \
-        I "Instalar un juego." \
-        D "Desinstalar un juego instalado." \
-        A "Actualizar un juego instalado." \
-        S "Sincronizar Biblioteca." \
-        O "Opciones y Cuenta.")
-}
-
-# Función para efectuar la opcion
-function ejecutarOpcion() {
-    # Opciones y menus
-    case "$OPCION" in
-    J)
-        echo -ne "--> Entrando en menú de EJECUCIÓN" && menuEjecutar
-        ;;
-    I)
-        echo -ne "--> Entrando en menú de INSTALACION" && menuInstalar
-        ;;
-    D)
-        echo -ne "--> Entrando en menú de DESINSTALACION" && menuDesinstalar
-        ;;
-    A)
-        echo -ne "--> Entrando en menú de ACTUALIZACION" && menuActualizar
-        ;;
-    S)
-        echo -ne "--> Entrando en menú de SINCRONIZACION" && menuSincronizar
-        ;;
-    O)
-        echo -ne "--> Entrando en menú de OPCIONES de Cuenta" && menuOpciones
+# Set language
+case "$LANG" in
+    es_ES.UTF-8)
+        lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder login en Amazon Games.\n\n\
+Por favor, haz login correctamente."
         ;;
     *)
-        $D "Desea Salir?" --stdout --yesno "Esta seguro que desea salir?\n\n\nElige tu respuesta..." 15 50
-        ans=$?
-        if [ $ans -eq 0 ]; then
-            salir
-            exit 0
-        fi
+        lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\n\
+Please login correctly."
         ;;
-    esac
-    OPCION=""
+esac
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#########################################
+##         FUNCTIONS 
+#########################################
+
+#########################
+# AUXILIARY FUNCT BEGIN #
+#########################
+
+##
+# getCache
+# Download the cache images from internet.
+#
+# $1 = source varname ( url to download )
+# $2 = target filename ( file to save the download )
+#
+function getCache()
+{
+    local __url=$1
+    local __file=$2
+
+    [ -f "$__file" ] || wget "$__url" -O "$__file" &
 }
 
-# Función para ejecutar un juego a través de bottles
-function menuEjecutar() {
-    # ¿Tenemos seleccinado algún PROTON?
-    if [[ ! -f "$PROTONGENERAL" ]] || [[ ! -f "$(head -1 "$PROTONGENERAL")" ]]; then
-        echo -ne "El proton no existe o no está correcto. Es necesario elegir uno por defecto."
-        $D "Sin PROTON" --msgbox "Es necesario elegir una version de PROTON por defecto.\n\nA continuacion \
-se mostraran un listado de los PROTON encontrados en el dispositivo." 0 0
-        RETURN=
-        while [ -z "$RETURN" ]; do
-            # Menu elección de proton.
-            menuProton
-            # En RETURN el valor devuelto
-            if [ -z "$RETURN" ]; then
-                $D "Sin elegir PROTON" --yesno "No has seleccionado ninguna version de Protonn.\nQuiere volver a selecionar una version?" 0 0
-                ans=$?
-                if [ ! $ans -eq 0 ]; then
-                    RETURN=999
-                fi
-            fi
+##
+# fileRandomInDir
+# Return a random file from dir.
+#
+# $1 = source varname ( dir )
+# return The random file in dir.
+#
+function fileRandomInDir()
+{
+    local __dir=$1
+    
+    find "$__dir" -mindepth 0 -maxdepth 1 -type f | shuf -n 1
+}
+
+##
+# serialize_array
+# Serializes a bash array to a string, with a configurable seperator.
+#
+# $1 = source varname ( contains array to be serialized )
+# $2 = target varname ( will contian the serialized string )
+# $3 = seperator ( optional, defaults to $'\x01' )
+#
+# example:
+#
+#    my_arry=( one "two three" four )
+#    serialize_array my_array my_string '|'
+#
+function serialize_array() {
+	declare -n _array="${1}" _str="${2}" # _array, _str => local reference vars
+	local IFS="${3:-$'\x01'}"
+	# shellcheck disable=SC2034 # Reference vars assumed used by caller
+	_str="${_array[*]}" # * => join on IFS
+}
+
+##
+# deserialize_array
+# Deserializes a string into a bash array, with a configurable seperator.
+#
+# $1 = source varname ( contains string to be deserialized )
+# $2 = target varname ( will contain the deserialized array )
+# $3 = seperator ( optional, defaults to $'\x01' )
+#
+# example:
+#
+#    my_string="one|two three|four"
+#    deserialize_array my_string my_array '|'
+#
+function deserialize_array() {
+	IFS="${3:-$'\x01'}" read -r -a "${2}" <<<"${!1}" # -a => split on IFS
+}
+
+#########################
+# AUXILIARY FUNCT END   #
+#########################
+##
+# dologin
+# Login on Amazon Games over Nile.
+#
+function dologin()
+{
+    "$NILE" auth --login --no-sandbox
+}
+
+##
+# cache
+# Load or generate the cache of ASON
+#
+function cache()
+{
+    if [ ! -f "$ASONLIBRARYFILE" ];then
+        ALIB=()
+        local __num=
+        __num=$($JQ ". | length" "$NILELIBR")
+        local __url=
+        local __file=
+        for ((i = 0; i < __num; i++)); do
+            #! indice + img + titulo + Genero
+            __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
+            __file="$HOME/.cache/ason/$(basename "$__url")"
+            [ -f "$__file" ] || getCache "$__url" "$__file"
+            ALIB+=("$i" "$__file" "$($JQ -r ".[$i].product.title" "$NILELIBR")" "$($JQ -r \
+".[$i].product.productDetail.details.genres[0]" "$NILELIBR")")
         done
 
-        case "$RETURN" in
-        888)
-            $D "Error" --msgbox "Sin version de PROTON instalada.\nPor favor, instala una version para poder ejectuar juegos desde ASON." 0 0
-            return
-            ;;
-        999)
-            $D "Error" --msgbox "No se ha seleccionado version de PROTON.\nPor favor, selecciona una version para poder ejectuar juegos desde ASON." 0 0
-            return
-            ;;
-        *)
-            # Grabamos el proton como proton por defecto
-            echo "$RETURN" | tee "$PROTONGENERAL"
-            ;;
-        esac
-
-    fi
-    # Tenemos proton bueno!
-    PROTON="$(cat "$PROTONGENERAL")"
-    # Mostramos los juegos instalados en un menú.
-    NUM=$($JQ ". | length" "$INSTALLED")
-    if [ "$NUM" == 0 ]; then
-        $D "Sin juegos instalados" --infobox "No se encuentran juegos instalados.\n\nInstala alguno para entrar a este menu." 0 0 && sleep 3
+        local __serialized=
+        serialize_array ALIB __serialized '|'
+        echo "$__serialized" > "$ASONLIBRARYFILE"
+    
     else
-        LISTA=()
-        for ((i = 0; i < NUM; i++)); do
-            ID=$($JQ -r ".[$i].id" "$INSTALLED")
-            NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
-            LISTA+=("$i" "$NOMBRE" "off")
-        done
-        RUN=$($D "SELECCION" --stdout \
-            --radiolist "Selecciona el juego a ejecutar..." 0 0 0 "${LISTA[@]}")
-
-        if [ -n "$RUN" ]; then
-            ID=$($JQ -r ".[$RUN].id" "$INSTALLED")
-            # En ID tenemos el id del juego seleccionado.
-            OPCION=$($D "MENU DE EJECUCION para $NOMBRE" \
-                --stdout \
-                --menu "Instalar dependencias?" 8 100 0 \
-                R "[CORRER JUEGO] - Lanzar el juego. (Puedes configurar el modo en Opciones." \
-                D "[DEPENDENCIAS] - Instalar las dependencias del juego [Hazlo al menos una vez]." \
-                P "[OPCIONES DEL JUEGO] - Configura Proton y variables para este juego.")
-
-            ASONPATH="$($JQ -r .["$RUN"].path "$INSTALLED")/Ason"
-
-            [ ! -d "$ASONPATH" ] && mkdir -p "$ASONPATH"
-            [ ! -f "$ASONPATH/exe" ] && echo -ne "Crear menu para elegir .exe"
-
-            export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/"
-
-            case "$OPCION" in
-            R)
-                EXE=$(cat "$EXE")
-                STEAM_COMPAT_DATA_PATH="$ASONPATH" WINEPREFIX="$ASONPATH/pfx" "$PROTON" run "$EXE"
-                ;;
-            D)
-                LISTA=()
-                while IFS= read -r -d $'\0'; do
-                    LISTA+=("$REPLY")
-                done < <(find "$($JQ -r .["$RUN"].path "$INSTALLED")/dependencies/" -name "*.exe" -print0)
-
-                for i in "${LISTA[@]}"; do
-                    STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.local/share/Steam/" \
-                        STEAM_COMPAT_DATA_PATH="$($JQ -r .["$RUN"].path "$INSTALLED")/Ason" \
-                        "$PROTON" run "$i"
-                done
-                ;;
-            P)
-                echo -ne "--> Lanzamos las opciones del juego en concreto\n"
-                # Menu de opciones
-                sleep 3
-                ;;
-            *)
-                echo -ne "--> Volviendo al menu anterior"
-                ;;
-            esac
-            OPCION=""
-        fi
+        local __serialized=
+        __serialized="$(cat "$ASONLIBRARYFILE")"
+        deserialize_array __serialized ALIB '|'
     fi
+    
 }
 
-function menuProton() {
-    # Devolverá en una variable llamada RETURN el proton elegido. Si se cancela o no existen será null
-    LISTAP=()
-    LISTA=()
-    while IFS= read -r -d $'\0'; do
-        LISTAP+=("$REPLY")
-    done < <(find "$HOME/.local/share/Steam/compatibilitytools.d/" -name "proton" -print0)
-    while IFS= read -r -d $'\0'; do
-        LISTAP+=("$REPLY")
-    done < <(find "$HOME/.local/share/Steam/steamapps/common/" -name "proton" -print0)
+##
+# loading
+# The global process to caching
+#
+function loading()
+{
+    local __pid    
+    
+    # splash Window
+    "$YAD" "$TITTLE" --center --splash --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons & __pid=$!
 
-    j=0
-    for i in "${LISTAP[@]}"; do
-        LISTA+=("$j" "$i" "off")
-        ((j++))
+    cache
+
+    # Kill the splash windows
+    kill $__pid
+}
+
+##
+# mainW
+# Show the MAIN Window
+#
+function mainW()
+{
+    "$YAD" "$TITTLE" --center --image="$(fileRandomInDir "$ASONIMGMAIN")" --sticky --buttons-layout=spread \
+    --button=Biblioteca:0 --button=Instalados:1 --button=Opciones:2 --button="Re/login":3 --button="About":4\
+    "$ICON" --fixed --on-top
+    
+    MENU=$?
+}
+
+##
+# libraryW
+# Show the LIBRARY Window
+#
+function libraryW()
+{
+    ALIB=()
+    if [ ${#ALIB[@]} -eq 0 ]; then
+        # Recaching
+        loading
+    fi
+    "$YAD" "$TITTLE" "$ICON" --list --with=900 --height=900 --hide-column=1 --column=ID --column=Juego:IMG --column=Titulo --column=Genero \
+    "${ALIB[@]}"
+sleep 333
+    TOTAL=$(echo "$RUN" | wc -w)
+    n=1
+
+    [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
+    for i in $RUN; do
+        ID=$($JQ -r ".[$i].id" "$LIBRARY")
+        EJECUTAR="$NILE install $ID --base-path $RUTAINSTALL"
+        echo $((n * 100 / TOTAL)) | $D "Instalando $($JQ -r .["$i"].product.title "$LIBRARY")" --gauge "Espere..." 10 60 0
+        ((n++))
+        temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
     done
-
-    if [ ${#LISTAP[@]} -eq 0 ]; then
-        RETURN=888
-    else
-        RUN=
-        RUN=$($D "SELECCION" --stdout \
-            --radiolist "Selecciona el la version de PROTON a usar" 0 0 0 "${LISTA[@]}")
-
-        #echo -ne "Elegido este ${LISTAP[$RUN]}"
-        if [ -z "$RUN" ]; then
-            RETURN=
-        else
-            RETURN="${LISTAP[$RUN]}"
-        fi
-    fi
-
-}
-
-# Función para mostrar el menu menuInstalar
-function menuInstalar() {
-    NUM=$($JQ ". | length" "$LIBRARY")
-    if [ "$NUM" == 0 ]; then
-        echo "Salimos."
-    else
-        LISTA=()
-        for ((i = 0; i < NUM; i++)); do
-            LISTA+=("$i" "$($JQ -r ".[$i].product.title" "$LIBRARY")" "off")
-        done
-        RUN=$($D "SELECCION" --stdout \
-            --checklist "Selecciona los juegos a instalar..." 0 0 0 "${LISTA[@]}")
-
-        TOTAL=$(echo "$RUN" | wc -w)
-        n=1
-
-        [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
-        for i in $RUN; do
-            ID=$($JQ -r ".[$i].id" "$LIBRARY")
-            EJECUTAR="$NILE install $ID --base-path $RUTAINSTALL"
-            echo $((n * 100 / TOTAL)) | $D "Instalando $($JQ -r .["$i"].product.title "$LIBRARY")" --gauge "Espere..." 10 60 0
-            ((n++))
-            temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
-        done
-
-        mostrarResultado
-    fi
-}
-
-# Función para mostrar el menu menuDesinstalar
-function menuDesinstalar() {
-    NUM=$($JQ ". | length" "$INSTALLED")
-    if [ "$NUM" == 0 ]; then
-        echo "Salimos."
-    else
-        LISTA=()
-        for ((i = 0; i < NUM; i++)); do
-            ID=$($JQ -r ".[$i].id" "$INSTALLED")
-            NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
-            LISTA+=("$i" "$NOMBRE" "off")
-        done
-        RUN=$($D "SELECCION" --stdout \
-            --radiolist "Selecciona el juego a desinstalar..." 0 0 0 "${LISTA[@]}")
-
-        [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
-        if [ -n "$RUN" ]; then
-            ID=$($JQ -r ".[$RUN].id" "$INSTALLED")
-            EJECUTAR="$NILE uninstall $ID"
-            temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
-
-            mostrarResultado
-        fi
-    fi
-}
-
-# Función para mostrar el menu menuActualizar
-function menuActualizar() {
-    NUM=$($JQ ". | length" "$INSTALLED")
-    if [ "$NUM" == 0 ]; then
-        echo "Salimos."
-    else
-        LISTA=()
-        for ((i = 0; i < NUM; i++)); do
-            ID=$($JQ -r ".[$i].id" "$INSTALLED")
-            NOMBRE=$(grep "$ID" <"$TEMPIDNAME" | cut -d '=' -f3)
-            LISTA+=("$i" "$NOMBRE" "off")
-        done
-        RUN=$($D "SELECCION" --stdout \
-            --checklist "Selecciona el juego a actualizar..." 0 0 0 "${LISTA[@]}")
-
-        TOTAL=$(echo "$RUN" | wc -w)
-        n=1
-
-        [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
-        for i in $RUN; do
-            ID=$($JQ -r ".[$i].id" "$INSTALLED")
-            EJECUTAR="$NILE update $ID"
-            echo $((n * 100 / TOTAL)) | $D "Actualizando $n de $TOTAL" --gauge "Espere..." 10 60 0
-            ((n++))
-            temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
-        done
-
-        mostrarResultado
-    fi
-}
-
-# Función para mostrar el menu menuSincronizar
-function menuSincronizar() {
-
-    $D "Sincronizar Biblioteca" --msgbox "Se procedera a sincronizar la biblioteca de Amazon Games con Ason.\nPulse OK y espere." 0 0
-    $NILE library sync 2>"$SALIDATEMP"
 
     mostrarResultado
 }
 
-# Función para mostrar el menu menuOpciones
-function menuOpciones() {
-    OPCION=$($D "MENU OPCIONES" \
-        --stdout \
-        --menu "Selecciona la opcion a realizar:" 10 50 0 \
-        C "Cambiar ruta de instalacion." \
-        L "Logout en Amazon Games." \
-        G "Volver a hacer login en Amazon Games.")
+##
+# installedW
+# Show the INSTALLED Window
+#
+function installedW()
+{
+    "$YAD" "$TITTLE" --center --no-buttons --text="Installed"
+}
 
-    # Opciones y menus
-    case "$OPCION" in
-    C)
-        menuCambioUbi
-        ;;
-    L)
-        menuLogout
-        ;;
-    G)
-        menuLogin
-        ;;
-    *)
-        OPCION=""
-        ;;
+##
+# optionW
+# Show the OPTION Window
+#
+function optionW()
+{
+    "$YAD" "$TITTLE" --center --no-buttons --text="Options"
+}
+
+##
+# loginW
+# Show the LOGIN Window
+#
+function loginW()
+{
+    "$YAD" "$TITTLE" --center --no-buttons --text="login"
+}
+
+##
+# aboutW
+# Show the ABOUT Window
+#
+function aboutW()
+{
+    "$YAD" "$TITTLE" --about --pname="ASON" --pversion="$VERSION" --comments="Play at your games of Amazon in Linux" \
+    --authors="Paco Guerrero <fjgj1@hotmail.com>" --website="https://github.com/FranjeGueje/Ason" "$ICON" --image="$ASONLOGO"
+}
+
+##
+# installedW
+# Show the EXIT Window
+#
+function exitW()
+{
+    "$YAD" "$TITTLE" --center --no-buttons --text="exit"
+}
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#########################################
+##         MAIN 
+#########################################
+
+loading
+
+while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ];do
+    "$YAD" "$TITTLE" --center --splash --image="$ASONWARNING" --text="$lNOLOGIN" \
+    --timeout=4 --no-buttons --timeout-indicator=top
+    dologin
+done
+
+MENU=0
+while [ $MENU -ne 252 ];do
+    mainW
+    case $MENU in
+        0) libraryW;;
+        1) installedW;;
+        2) optionW;;
+        3) loginW;;
+        4) aboutW;;
+        252) exitW;;
     esac
-}
-
-# Función para mostrar el menu de cambio de ubicación de instalación
-function menuCambioUbi() {
-    NUEVARUTA=$($D "Cambio del directorio de instalacion de juegos" --stdout --inputbox "Nuevo directorio de instalacion" 0 0 "$RUTAINSTALL")
-    [ ! -d "$NUEVARUTA" ] && $D "ATENCION!!!" --msgbox "La ruta que indicas no existe.\nNo se realiza ningun cambio." 0 0
-    [ -d "$NUEVARUTA" ] && RUTAINSTALL="$NUEVARUTA" && echo "$NUEVARUTA" >"$CONFIGRUTA"
-}
-
-# Función para mostrar el menu menuLogout
-function menuLogout() {
-    $D "Forzar Cierre de Usuario" --yesno "Se procedera a hacer logout de tu cuenta de Amazon y salir de Ason.\nQuiere continuar?" 0 0
-    ans=$?
-    if [ $ans -eq 0 ]; then
-        $NILE auth --logout 2>"$SALIDATEMP"
-        rm -f "$USER"
-
-        mostrarResultado
-
-        salir
-        exit 0
-    fi
-}
-
-# Función para mostrar el menu menuLogin
-function menuLogin() {
-    $D "Sin login de usuario" --yesno "Se procedera a hacer logout de tu cuenta de Amazon y volver a iniciar.\nQuiere continuar?" 0 0
-    ans=$?
-    if [ $ans -eq 0 ]; then
-        $NILE auth --logout 2>"$SALIDATEMP"
-        rm -f "$USER"
-        $NILE auth -l 2>>"$SALIDATEMP"
-
-        mostrarResultado
-    fi
-}
-
-# Función auxiliar para mostrar la salida (limpiada) y limpiar temporales
-function mostrarResultado() {
-    if [ -f "$SALIDATEMP" ]; then
-        temp=$(grep -v destruction <"$SALIDATEMP" | grep -v ubuntu | grep -v wl_display | grep -v wayland)
-        $D "Resultado Operacion" --msgbox "$temp" 0 0 && rm -f "$SALIDATEMP"
-    fi
-}
-
-##############################################################################################################################################################
-#                                                    MAIN (PRINCIPAL)
-##############################################################################################################################################################
-
-# Preparamos el entorno y lanzamos la funcion entrar()
-entrar
-
-SIZE="$(stat -c "%s" "$USER")"
-# Si el fichero con los datos de usuario está vacío, lo borramos para que vuelva a pedir login
-[ "$SIZE" -eq "0" ] && rm "$USER" -f
-
-while [ ! -f "$USER" ]; do
-    $D "Sin login de usuario" --yesno "No se encuentra informacion sobre el login. \n\nQuieres lanzar la peticion de login?\n\
-Elija su respuesta...\n\n\nSi elige NO --> ASON *NO* terminara su ejecucion, pero su funcionamiento sera limitado. Tenlo en cuenta! " 15 50
-    ans=$?
-    if [ $ans -eq 0 ]; then
-        dologin
-    else
-        break
-    fi
 done
-
-if [ -f "$LIBRARY" ]; then
-    $JQ -r '.[] | "\(.id)==\(.product.title)"' "$LIBRARY" >"$TEMPIDNAME"
-fi
-
-while :; do
-    menuPrincipal
-    ejecutarOpcion
-done
-
-# Salimos de ASON
-salir
 
 exit 0

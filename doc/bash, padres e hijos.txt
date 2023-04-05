@@ -1,0 +1,21 @@
+tree / > borrar.txt & tree_pid=$!
+    Store the PID:
+
+    ./endlessloop & endlessloop_pid=$!
+    sleep 1
+    kill "$endlessloop_pid"
+    You can also check whether the process is still running with kill -0:
+
+    if kill -0 "$endlessloop_pid"; then
+    echo "Endlessloop is still running"
+    fi
+    ...and storing the content in a variable means it scales to multiple processes:
+
+    endlessloop_pids=( )                       # initialize an empty array to store PIDs
+    ./endlessloop & endlessloop_pids+=( "$!" ) # start one in background and store its PID
+    ./endlessloop & endlessloop_pids+=( "$!" ) # start another and store its PID also
+    kill "${endlessloop_pids[@]}"
+
+https://unix.stackexchange.com/questions/285906/how-to-execute-scripts-in-a-parent-child-behavior-in-bash
+
+https://unix.stackexchange.com/questions/124127/kill-all-descendant-processes

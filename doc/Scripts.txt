@@ -1,0 +1,6 @@
+ yad --about --pname="Ason" --pversion="2.0" --comments="comentarios para que se cague la perra" --license="LGLP v3" --authors="Paco Guerrero" --website="https://google.es"
+
+yad --list --title=ASON --with=900 --height=900 --hide-column=3  --column=Juego:IMG --column=Titulo --column=ID 41-157gXorL.png Titulo1 111 41lM-ZftNcL.png Titulo2 222 51dCTHo89GL.png Titulo3 333 51FO8ur658L.png Titulo 444 41-157gXorL.png Titulo1 111 41lM-ZftNcL.png Titulo2 222 51dCTHo89GL.png Titulo3 333 51FO8ur658L.png Titulo 444 41-157gXorL.png Titulo1 111 41lM-ZftNcL.png Titulo2 222 51dCTHo89GL.png Titulo3 333 51FO8ur658L.png Titulo 444
+
+yad --tile="Ason" --center --image="Ason"$(( ( RANDOM % $(ls | wc -l) )))".jpeg" --splash --timeout=3 --no-buttons --timeout-indicator=top
+
