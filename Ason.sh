@@ -17,7 +17,7 @@
 #########################################
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
-VERSION=2.0.0
+VERSION=2.0.0b1
 
 # Configs of nile
 NILEUSER="$HOME/.config/nile/user.json"
@@ -36,6 +36,10 @@ JQ="$ASONBIN/jq"
 ASONTITFILE="$ASONCACHE""/ason.tit"; ATIT=()
 ASONIMGFILE="$ASONCACHE""/ason.img"; AIMG=()
 ASONGENFILE="$ASONCACHE""/ason.gen"; AGEN=()
+
+# Queue for download
+QASON="$ASONCACHE""/ason.donwload"
+PID_DOWNLOADER=
 
 # Where is Steam, compatdata,shadercache, and grid
 STEAM="$HOME/.local/share/Steam"
@@ -153,6 +157,88 @@ function deserialize_array() {
 	IFS="${3:-$'\x01'}" read -r -a "${2}" <<<"${!1}" # -a => split on IFS
 }
 
+##
+# save cache
+# Save the arrays to cache files
+#
+function save_cache()
+{
+    local __serialized=
+    serialize_array ATIT __serialized '|'
+    echo "$__serialized" > "$ASONTITFILE"
+    serialize_array AGEN __serialized '|'
+    echo "$__serialized" > "$ASONGENFILE"
+    serialize_array AIMG __serialized '|'
+    echo "$__serialized" > "$ASONIMGFILE"
+}
+
+##
+# load_cache
+# Load the cache files to arrays
+#
+function load_cache()
+{
+    local __serialized=
+    __serialized="$(cat "$ASONTITFILE")"
+    deserialize_array __serialized ATIT '|'
+    __serialized="$(cat "$ASONGENFILE")"
+    deserialize_array __serialized AGEN '|'
+    __serialized="$(cat "$ASONIMGFILE")"
+    deserialize_array __serialized AIMG '|'
+}
+
+##
+# reload_library
+# Load in memory the Library of ASON
+#
+function reload_library()
+{
+    #! indice + img + titulo + Genero
+    ALIB=()
+    local __num=
+    __num=$($JQ ". | length" "$NILELIBR")
+    
+    for ((i = 0; i < __num; i++)); do
+        ALIB+=( "$i" "${AIMG[$i]}" "$(echo "${ATIT[$i]}" | iconv -c)" "${AGEN[$i]}" )
+    done
+}
+
+##
+# downloader
+# Downloader main daemon
+#
+# $1 = source varname ( contains pid of father process )
+#
+function downloader()
+{
+    local __fpid=$1 ; local __file_downloading= ; local __file_downloading= ; local __files=
+    find "$QASON" -type f -exec rm -Rf {} \;
+
+    echo "Comenzando el descargador." > /tmp/ason.downloader.log
+    while kill -0 "$__fpid" 2>/dev/null || [ "$(ls -A "$QASON")" ] ;do
+
+        if [ "$(ls -A "$QASON")" ];then
+            __files=("$QASON"/*)
+            __file_downloading="${__files[0]}"
+            __downloading=$(basename "$__file_downloading")
+            "$YAD" --tittle=Downloading "$ICON" --image=/home/deck/.cache/ason/31vmnyBDdKL.png --posx=1 --poxy=1 --no-buttons --undecorated \
+            --no-escape --no-focus &
+            local __pimage=$!
+            echo "Downloader: Descargando $__downloading" >> /tmp/ason.downloader.log
+            sleep 6
+            echo "Downloader: Terminado $__downloading" >> /tmp/ason.downloader.log
+            kill "$__pimage"
+            sleep 0.5
+            rm "$__file_downloading"
+        else
+            sleep 5
+        fi
+    done
+
+    echo "Saliendo del descargador." >> /tmp/ason.downloader.log
+
+}
+
 #########################
 # AUXILIARY FUNCT END   #
 #########################
@@ -171,38 +257,22 @@ function dologin()
 #
 function cache()
 {
-    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ];then
-        ATIT=();AGEN=();AIMG=()
-        local __num=
-        __num=$($JQ ". | length" "$NILELIBR")
-        local __url=
-        local __file=
-        [ -d "$ASONCACHE" ] || mkdir -p "$ASONCACHE"
-        for ((i = 0; i < __num; i++)); do
-            __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
-            __file="$ASONCACHE/$(basename "$__url")"
-            [ -f "$__file" ] || getCache "$__url" "$__file"
-            ATIT+=( "$($JQ -r ".[$i].product.title" "$NILELIBR")" )
-            AGEN+=( "$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR")" )
-            AIMG+=( "$__file" )
-        done
+    ATIT=();AGEN=();AIMG=()
+    local __num=
+    __num=$($JQ ". | length" "$NILELIBR")
+    local __url=
+    local __file=
+    for ((i = 0; i < __num; i++)); do
+        echo $((i * 100 / __num))
+        __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
+        __file="$ASONCACHE/$(basename "$__url")"
+        [ -f "$__file" ] || getCache "$__url" "$__file"
+        ATIT+=( "$($JQ -r ".[$i].product.title" "$NILELIBR")" )
+        AGEN+=( "$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR")" )
+        AIMG+=( "$__file" )
+    done
 
-        local __serialized=
-        serialize_array ATIT __serialized '|'
-        echo "$__serialized" > "$ASONTITFILE"
-        serialize_array AGEN __serialized '|'
-        echo "$__serialized" > "$ASONGENFILE"
-        serialize_array AIMG __serialized '|'
-        echo "$__serialized" > "$ASONIMGFILE"
-    else
-        local __serialized=
-        __serialized="$(cat "$ASONTITFILE")"
-        deserialize_array __serialized ATIT '|'
-        __serialized="$(cat "$ASONGENFILE")"
-        deserialize_array __serialized AGEN '|'
-        __serialized="$(cat "$ASONIMGFILE")"
-        deserialize_array __serialized AIMG '|'
-    fi
+    save_cache
 }
 
 ##
@@ -216,7 +286,15 @@ function loading()
     # splash Window
     "$YAD" "$TITTLE" --center --splash --no-escape --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons & __pid=$!
 
-    cache
+    [ -d "$ASONCACHE" ] || mkdir -p "$ASONCACHE"
+    [ -d "$QASON" ] || mkdir -p "$QASON"
+    
+    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ];then
+        cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape
+    fi
+
+    load_cache
+    reload_library
 
     # Kill the splash windows
     kill $__pid
@@ -230,7 +308,7 @@ function mainW()
 {
     "$YAD" "$TITTLE" --center --image="$(fileRandomInDir "$ASONIMGMAIN")" --sticky --buttons-layout=spread \
     --button=Biblioteca:0 --button=Instalados:1 --button=Opciones:2 --button="Re/login":3 --button="About":4\
-    "$ICON" --fixed --on-top
+    --button="Exit":5 "$ICON" --fixed --on-top
     
     MENU=$?
 }
@@ -240,35 +318,25 @@ function mainW()
 # Show the LIBRARY Window
 #
 function libraryW()
-{            #! indice + img + titulo + Genero
-
-    ALIB=()
-    local __num=
-    __num=$($JQ ". | length" "$NILELIBR")
-
-    echo "${ATIT[@]}"
+{
+    local __salida=
+    __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
+    --column=ID --column=Juego:IMG --column=Titulo --column=Genero "${ALIB[@]}")
     
-    for ((i = 0; i < __num; i++)); do
-        ALIB+=( "$i" "${AIMG[$i]}" "${ATIT[$i]}" "${AGEN[$i]}" )
-    done
+    if [ "$__salida" ];then
+        gameDetailW "$(echo "$__salida" | cut -d'|' -f1)"
+    fi
+}
 
-    "$YAD" "$TITTLE" "$ICON" --center --width=1024 --height=1024 --list --hide-column=1 \
-    --column=ID --column=Juego:IMG --column=Titulo --column=Genero "${ALIB[@]}"
-
-sleep 333
-    TOTAL=$(echo "$RUN" | wc -w)
-    n=1
-
-    [ -f "$SALIDATEMP" ] && rm -f "$SALIDATEMP"
-    for i in $RUN; do
-        ID=$($JQ -r ".[$i].id" "$LIBRARY")
-        EJECUTAR="$NILE install $ID --base-path $RUTAINSTALL"
-        echo $((n * 100 / TOTAL)) | $D "Instalando $($JQ -r .["$i"].product.title "$LIBRARY")" --gauge "Espere..." 10 60 0
-        ((n++))
-        temp=$(eval "$EJECUTAR" 2>>"$SALIDATEMP")
-    done
-
-    mostrarResultado
+##
+# gameDetailW
+# Show the INSTALLED Window
+#
+# $1 = source varname ( contains the index of game in JSON)
+#
+function gameDetailW()
+{
+    "$YAD" "$TITTLE" --center --no-buttons --text="Game Detail $1"
 }
 
 ##
@@ -314,7 +382,9 @@ function aboutW()
 #
 function exitW()
 {
-    "$YAD" "$TITTLE" --center --no-buttons --text="exit"
+    "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="Thanks for use ASON. Bye Bye...:LBL" --align=center --timeout=3
+
+    kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ] && echo "Downloader Activo"
 }
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -325,6 +395,9 @@ function exitW()
 
 loading
 
+downloader $$ &
+PID_DOWNLOADER=$!
+
 while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ];do
     "$YAD" "$TITTLE" --center --splash --image="$ASONWARNING" --text="$lNOLOGIN" \
     --timeout=4 --no-buttons --timeout-indicator=top
@@ -332,7 +405,7 @@ while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ];do
 done
 
 MENU=0
-while [ $MENU -ne 252 ];do
+while [ $MENU -ne 252 ] && [ $MENU -ne 5 ];do
     mainW
     case $MENU in
         0) libraryW;;
@@ -340,7 +413,7 @@ while [ $MENU -ne 252 ];do
         2) optionW;;
         3) loginW;;
         4) aboutW;;
-        252) exitW;;
+        252 | 5) exitW;;
     esac
 done
 
