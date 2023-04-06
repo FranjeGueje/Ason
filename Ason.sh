@@ -22,7 +22,7 @@ VERSION=2.0.0b1
 # Configs of nile
 NILEUSER="$HOME/.config/nile/user.json"
 NILELIBR="$HOME/.config/nile/library.json"
-NILEINSTALLED="$HOME/.config/nile/installed.json"
+#NILEINSTALLED="$HOME/.config/nile/installed.json"
 
 # Where is the app and binaries
 ASONPATH=$(readlink -f "$(dirname "$0")")
@@ -42,21 +42,21 @@ QASON="$ASONCACHE""/ason.donwload"
 PID_DOWNLOADER=
 
 # Where is Steam, compatdata,shadercache, and grid
-STEAM="$HOME/.local/share/Steam"
-COMPATDATA="$STEAM/steamapps/compatdata"
-SHADERCACHE="$STEAM/steamapps/shadercache"
-DIRGRID="$STEAM/userdata/??*/config/grid/"
+#STEAM="$HOME/.local/share/Steam"
+#COMPATDATA="$STEAM/steamapps/compatdata"
+#SHADERCACHE="$STEAM/steamapps/shadercache"
+#DIRGRID="$STEAM/userdata/??*/config/grid/"
 
 # Desktop file
-DESKTOP_NAME_FILE="$HOME/.local/share/applications"
-ENTRY_DESKTOP="[Desktop Entry]\nIcon="
+#DESKTOP_NAME_FILE="$HOME/.local/share/applications/ason.desktop"
+
 
 # Startup content
-CONTENT_DESKTOP="[Desktop Entry]\n\
-Name=Ason\n\
-Exec=\"$(readlink -f "$0")\"\n\
-Terminal=false\n\
-Type=Application\n"
+#CONTENT_DESKTOP="[Desktop Entry]\n\
+#Name=Ason\n\
+#Exec=\"$(readlink -f "$0")\"\n\
+#Terminal=false\n\
+#Type=Application\n"
 
 # IMG dir
 ASONIMAGES="$ASONPATH/img/"
