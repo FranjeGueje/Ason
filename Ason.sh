@@ -31,6 +31,7 @@ ASONCACHE="$HOME/.cache/ason/"
 YAD="$ASONBIN/yad"
 NILE="$ASONBIN/nile"
 JQ="$ASONBIN/jq"
+DIRINSTALL="/run/media/mmcblk0p1/tmp/"
 
 # Configs of Ason
 ASONTITFILE="$ASONCACHE""/ason.tit"; ATIT=()
@@ -39,7 +40,10 @@ ASONGENFILE="$ASONCACHE""/ason.gen"; AGEN=()
 
 # Queue for download
 QASON="$ASONCACHE""/ason.donwload"
+# Pid of downloader
 PID_DOWNLOADER=
+# Log of downloader
+LOGDOWNLOADER="$ASONCACHE"ason.downloader.log
 
 # Where is Steam, compatdata,shadercache, and grid
 #STEAM="$HOME/.local/share/Steam"
@@ -75,10 +79,20 @@ case "$LANG" in
     es_ES.UTF-8)
         lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder login en Amazon Games.\n\n\
 Por favor, haz login correctamente."
+        lLIBRARY=Biblioteca
+        lINSTALLED=Instalados
+        lOPTIONS=Opciones
+        lEXIT=Salir
+        lEXITMSG='Gracias por usar ASON. Hasta pronto.'
         ;;
     *)
         lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\n\
 Please login correctly."
+        lLIBRARY=Library
+        lINSTALLED=Installed
+        lOPTIONS=Options
+        lEXIT=Exit
+        lEXITMSG='Thanks for use ASON. Bye Bye...'
         ;;
 esac
 
@@ -211,22 +225,25 @@ function reload_library()
 #
 function downloader()
 {
-    local __fpid=$1 ; local __file_downloading= ; local __file_downloading= ; local __files=
+    local __fpid=$1 ; local __file_downloading= ; local __downloading= ; local __files= ; local __name= ; local __image=
     find "$QASON" -type f -exec rm -Rf {} \;
 
-    echo "Comenzando el descargador." > /tmp/ason.downloader.log
+    echo "Comenzando el descargador." > "$LOGDOWNLOADER"
     while kill -0 "$__fpid" 2>/dev/null || [ "$(ls -A "$QASON")" ] ;do
 
         if [ "$(ls -A "$QASON")" ];then
             __files=("$QASON"/*)
             __file_downloading="${__files[0]}"
             __downloading=$(basename "$__file_downloading")
-            "$YAD" --tittle=Downloading "$ICON" --image=/home/deck/.cache/ason/31vmnyBDdKL.png --posx=1 --poxy=1 --no-buttons --undecorated \
+            __name=$(cut -d '|' -f1 < "$__file_downloading")
+            __image=$(cut -d '|' -f2 < "$__file_downloading")
+            "$YAD" --tittle=Downloading "$ICON" --image="$__image" --posx=1 --poxy=1 --no-buttons --undecorated \
             --no-escape --no-focus &
             local __pimage=$!
-            echo "Downloader: Descargando $__downloading" >> /tmp/ason.downloader.log
+            echo "Downloader: Downloading a game with ID: $__downloading and name $__name" >> "$LOGDOWNLOADER"
+            echo "$NILE" install --base-path "$DIRINSTALL" "$__downloading" >> "$LOGDOWNLOADER" 2>> "$LOGDOWNLOADER"
             sleep 6
-            echo "Downloader: Terminado $__downloading" >> /tmp/ason.downloader.log
+            echo "Downloader: Finish the game with ID: $__downloading and name $__name" >> "$LOGDOWNLOADER"
             kill "$__pimage"
             sleep 0.5
             rm "$__file_downloading"
@@ -235,8 +252,25 @@ function downloader()
         fi
     done
 
-    echo "Saliendo del descargador." >> /tmp/ason.downloader.log
+    echo "Saliendo del descargador." >> "$LOGDOWNLOADER"
 
+}
+
+##
+# add_download
+# Add a game to download
+#
+# $1 = source varname ( contains the ID (of game) )
+# S2 = source varname ( name of game )
+# S3 = source varname ( path of game image )
+#
+function add_download()
+{
+    local __id=$1
+    local __name=$2
+    local __image=$3
+
+    echo -ne "$__name|$__image" > "$QASON/$__id"
 }
 
 #########################
@@ -307,9 +341,8 @@ function loading()
 function mainW()
 {
     "$YAD" "$TITTLE" --center --image="$(fileRandomInDir "$ASONIMGMAIN")" --sticky --buttons-layout=spread \
-    --button=Biblioteca:0 --button=Instalados:1 --button=Opciones:2 --button="Re/login":3 --button="About":4\
-    --button="Exit":5 "$ICON" --fixed --on-top
-    
+    --button=$lLIBRARY:0 --button=$lINSTALLED:1 --button=$lOPTIONS:2 --button="$lEXIT":3 "$ICON" --fixed --on-top
+
     MENU=$?
 }
 
@@ -321,11 +354,22 @@ function libraryW()
 {
     local __salida=
     __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
-    --column=ID --column=Juego:IMG --column=Titulo --column=Genero "${ALIB[@]}")
+    --button=Detalles:0 --button=Volver:1 --button=Instalar:2 --column=ID --column=Juego:IMG --column=Titulo --column=Genero "${ALIB[@]}")
     
-    if [ "$__salida" ];then
-        gameDetailW "$(echo "$__salida" | cut -d'|' -f1)"
-    fi
+    local __boton=$?
+    local __index=
+    __index=$(echo "$__salida" | cut -d'|' -f1)
+
+    case $__boton in
+        0) gameDetailW "$__index";;
+        2) 
+            local __id= ; local __name= 
+            __id=$($JQ -r ".[$__index].id" "$NILELIBR")
+            __name=$(echo "$__salida" | cut -d'|' -f3)
+            add_download "$__id" "$__name" "${AIMG[$__index]}" ;;
+        *) ;;
+    esac
+
 }
 
 ##
@@ -382,7 +426,7 @@ function aboutW()
 #
 function exitW()
 {
-    "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="Thanks for use ASON. Bye Bye...:LBL" --align=center --timeout=3
+    "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="$lEXITMSG:LBL" --align=center --timeout=3
 
     kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ] && echo "Downloader Activo"
 }
@@ -393,27 +437,27 @@ function exitW()
 ##         MAIN 
 #########################################
 
-loading
-
-downloader $$ &
-PID_DOWNLOADER=$!
-
+#* While the user is not logged
 while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ];do
     "$YAD" "$TITTLE" --center --splash --image="$ASONWARNING" --text="$lNOLOGIN" \
     --timeout=4 --no-buttons --timeout-indicator=top
     dologin
 done
 
+loading
+
+downloader $$ &
+PID_DOWNLOADER=$!
+
+
 MENU=0
-while [ $MENU -ne 252 ] && [ $MENU -ne 5 ];do
+while [ $MENU -ne 252 ] && [ $MENU -ne 3 ];do
     mainW
     case $MENU in
         0) libraryW;;
         1) installedW;;
         2) optionW;;
-        3) loginW;;
-        4) aboutW;;
-        252 | 5) exitW;;
+        252 | 3) exitW;;
     esac
 done
 
