@@ -305,6 +305,17 @@ function add_download()
     echo -ne "$__name|$__image" > "$QASON/$__id"
 }
 
+##
+# show_msg
+# Show a message on screen
+#
+# $1 = source varname ( Text to show )
+#
+function show_msg()
+{
+    "$YAD" "$TITTLE" "$ICON" --center --no-buttons --align=center --timeout=2 --undecorated --text="$1"
+}
+
 #########################
 # AUXILIARY FUNCT END   #
 #########################
@@ -437,7 +448,7 @@ function gestor_descargasW()
             done
         fi
     else
-        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --align=center --timeout=2 --undecorated --text="$lNODOWLOADS"       
+        show_msg "$lNODOWLOADS"       
     fi
 
 }
@@ -462,7 +473,7 @@ function installedW()
     local __num=
 
     if [ ! -f "$NILEINSTALLED" ] || [ "$("$JQ" ". | length" "$NILEINSTALLED")" == 0 ]; then
-        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --align=center --timeout=2 --undecorated --text="$lNOINSTALLED" 
+        show_msg "$lNOINSTALLED" 
     else
         local __num=
         __num=$("$JQ" ". | length" "$NILEINSTALLED")
@@ -473,13 +484,28 @@ function installedW()
             __NOMBRE=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f3)
             __IMG=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f5)
             __PATH=$("$JQ" -r .[$i].path "$NILEINSTALLED")
-            __LISTA+=( "$i" "$ASONCACHE/$(basename "$__IMG")" "$__NOMBRE" "$__PATH" )
+            __LISTA+=( "$i" "$__NOMBRE" "$ASONCACHE/$(basename "$__IMG")" "$__PATH" )
         done
 
         local __salida=
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
-    --column=Index --column="$lGAME":IMG --column="$lTITTLE" --column="$lPATH" --button="$lBACK":1 --button="$lRUN":2 --button="$lUNINSTALL":0 "${__LISTA[@]}")
+    --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lRUN":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+        
+        local __boton=$?
 
+        case "$__boton" in
+            0) # Run
+                echo "run $__salida"
+            ;;
+            2) # Uninstall
+                __ID=$(echo "$__salida" | cut -d '|' -f1)
+                __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
+                show_msg "Uninstalling $__NOMBRE"
+                "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
+                show_msg "Uninstalled $__NOMBRE"
+            ;;
+            *) ;;
+        esac
     fi
 }
 
