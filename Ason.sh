@@ -12,14 +12,15 @@
 # 0 --> OK!!!.
 ##############################################################################################################################################################
 
-#########################################
-##         GLOBAL VARIABLES
-#########################################
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!         GLOBAL VARIABLES
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
 VERSION=2.0.0b1
 
-# Configs of nile
+# Config files of nile
 NILEUSER="$HOME/.config/nile/user.json"
 NILELIBR="$HOME/.config/nile/library.json"
 NILEINSTALLED="$HOME/.config/nile/installed.json"
@@ -31,9 +32,10 @@ ASONCACHE="$HOME/.cache/ason/"
 YAD="$ASONBIN/yad"
 NILE="$ASONBIN/nile"
 JQ="$ASONBIN/jq"
-DIRINSTALL="/run/media/mmcblk0p1/tmp/"
+#TODO para las opciones de configuracion (Temporal)
+DIRINSTALL="$HOME/Games"
 
-# Configs of Ason
+# Config files of Ason
 ASONTITFILE="$ASONCACHE""/ason.tit"
 ATIT=()
 ASONIMGFILE="$ASONCACHE""/ason.img"
@@ -41,6 +43,7 @@ AIMG=()
 ASONGENFILE="$ASONCACHE""/ason.gen"
 AGEN=()
 AID_NAME="$ASONCACHE""/ason.id-name"
+ASONCACHEVER="$ASONCACHE""/ason.versioncache"
 
 # Queue for download
 QASON="$ASONCACHE""/ason.donwload"
@@ -73,7 +76,6 @@ ASONLOGO="$ASONIMAGES/Ason_64.jpeg"
 ASONWARNING="$ASONIMAGES/warning.png"
 
 #* Tittle and share Window components
-#TITTLE="--title=\"[A]mazon Game[S] [O]ver [N]ile\""
 TITTLE="--title=$NOMBRE - $VERSION"
 ICON="--window-icon=$ASONLOGO"
 
@@ -101,6 +103,9 @@ Por favor, haz login correctamente."
     lDELETE='Borrar'
     lNOINSTALLED='No hay juegos instalados'
     lPATH='Ruta'
+    lNOSELECT='No has seleccionado ningún elemento'
+    lUNINSTALLED='Desinstalado'
+    lUNINSTALLING='Desinstalando'
     ;;
 *)
     lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\n\
@@ -124,30 +129,40 @@ Please login correctly."
     lDELETE='Delete'
     lNOINSTALLED='There are no installed games.'
     lPATH='Path'
+    lNOSELECT='You have not selected any item'
+    lUNINSTALLED='Uninstalled'
+    lUNINSTALLING='Uninstalling'
     ;;
 esac
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#########################################
-##         FUNCTIONS
-#########################################
+#!         FUNCTIONS
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #########################
 # AUXILIARY FUNCT BEGIN #
 #########################
 
 ##
-# getCache
+# get_cache
 # Download the cache images from internet.
 #
 # $1 = source varname ( url to download )
 # $2 = target filename ( file to save the download )
 #
-function getCache() {
+function get_cache() {
     local __url=$1
     local __file=$2
 
     [ -f "$__file" ] || wget "$__url" -O "$__file" >/dev/null 2>/dev/null &
+}
+
+##
+# delete_cache
+# Delete all cache of Ason
+#
+function delete_cache() {
+    rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER"
 }
 
 ##
@@ -207,11 +222,13 @@ function deserialize_array() {
 function save_cache() {
     local __serialized=
     serialize_array ATIT __serialized '|'
-    echo "$__serialized" >"$ASONTITFILE"
+    echo "$__serialized" > "$ASONTITFILE"
     serialize_array AGEN __serialized '|'
-    echo "$__serialized" >"$ASONGENFILE"
+    echo "$__serialized" > "$ASONGENFILE"
     serialize_array AIMG __serialized '|'
-    echo "$__serialized" >"$ASONIMGFILE"
+    echo "$__serialized" > "$ASONIMGFILE"
+
+    echo "$VERSION" > "$ASONCACHEVER"
 }
 
 ##
@@ -251,12 +268,20 @@ function reload_library() {
 # $1 = source varname ( contains pid of father process )
 #
 function downloader() {
+    # PID of father
     local __fpid=$1
+    # File that is downloading
     local __file_downloading=
+    # Name of downloading file
     local __downloading=
+    # Queue of files to download
     local __files=
+    # Name of game
     local __name=
+    # Image of game
     local __image=
+
+    [ -d "$QASON" ] || mkdir -p "$QASON"
     find "$QASON" -type f -exec rm -Rf {} \;
 
     echo "Starting the Descargador." >"$LOGDOWNLOADER"
@@ -271,9 +296,11 @@ function downloader() {
             "$YAD" --tittle="$lDOWNLOADING" "$ICON" --image="$__image" --posx=1 --poxy=1 --no-buttons --undecorated \
                 --no-escape --no-focus &
             local __pimage=$!
-            echo "Downloader: Downloading a game with ID: $__downloading and name $__name" >>"$LOGDOWNLOADER"
-            "$NILE" install --base-path "$DIRINSTALL" "$__downloading" >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
-            echo "Downloader: Finish the game with ID: $__downloading and name $__name" >>"$LOGDOWNLOADER"
+            {
+                echo "Downloader: Downloading a game with ID: $__downloading and name $__name"
+                "$NILE" install --base-path "$DIRINSTALL" "$__downloading"
+                echo "Downloader: Finish the game with ID: $__downloading and name $__name"
+            }  >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
             kill "$__pimage"
             sleep 0.5
             if [ -f "$__file_downloading" ]; then
@@ -332,9 +359,13 @@ function dologin() {
 # Load or generate the cache of ASON
 #
 function cache() {
+    # List of tittles
     ATIT=()
+    # List of genres
     AGEN=()
+    # List of images
     AIMG=()
+
     local __num=
     __num=$($JQ ". | length" "$NILELIBR")
     local __url=
@@ -343,7 +374,7 @@ function cache() {
         echo $((i * 100 / __num))
         __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
         __file="$ASONCACHE/$(basename "$__url")"
-        [ -f "$__file" ] || getCache "$__url" "$__file"
+        [ -f "$__file" ] || get_cache "$__url" "$__file"
         ATIT+=("$($JQ -r ".[$i].product.title" "$NILELIBR")")
         AGEN+=("$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR")")
         AIMG+=("$__file")
@@ -357,6 +388,7 @@ function cache() {
 # The global process to caching
 #
 function loading() {
+    # PID of the new dialog
     local __pid=
 
     # splash Window
@@ -364,9 +396,11 @@ function loading() {
     __pid=$!
 
     [ -d "$ASONCACHE" ] || mkdir -p "$ASONCACHE"
-    [ -d "$QASON" ] || mkdir -p "$QASON"
 
-    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ]; then
+    local __ver_cache=0 && [ -f "$ASONCACHEVER" ] && __ver_cache=$(cat "$ASONCACHEVER")
+
+    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ] || [ "$__ver_cache" != "$VERSION" ]; then
+        delete_cache
         cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape
     fi
 
@@ -397,7 +431,9 @@ function mainW() {
 # Show the LIBRARY Window
 #
 function libraryW() {
+    # Result of YAD dialog
     local __salida=
+
     __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
         --button="$lDETAILS":0 --button="$lBACK":1 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
 
@@ -424,9 +460,14 @@ function libraryW() {
 # Show the downloads queue
 #
 function gestor_descargasW() {
+    # List of downloads
     local __descargas=
+    # Name of game
     local __name=
-    local __DLIB=()
+    # Image of game
+    local __image=
+    # List of Ason's download
+    local __ADOWN=()
 
     if [ "$(ls -A "$QASON")" ]; then
         __descargas=("$QASON"/*)
@@ -434,19 +475,23 @@ function gestor_descargasW() {
         [ "${#__descargas[@]}" -eq 0 ] || for i in "${__descargas[@]}"; do
             __name=$(cut -d '|' -f1 <"$i")
             __image=$(cut -d '|' -f2 <"$i")
-            __DLIB+=("0" "$i" "$__image" "$__name")
+            __ADOWN+=("0" "$i" "$__image" "$__name")
         done
 
         local __salida=
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --checklist --width=1280 --height=800 --hide-column=2 \
-            --column="" --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__DLIB[@]}")
+            --column="" --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__ADOWN[@]}")
 
         local __boton=$?
 
         if [ "$__boton" -eq 0 ]; then
-            for i in $(echo "$__salida" | cut -d'|' -f2); do
-                rm "$i"
-            done
+            if [ ${#__salida} -eq 0 ];then
+                show_msg "$lNOSELECT"
+            else
+                for i in $(echo "$__salida" | cut -d'|' -f2); do
+                    rm "$i"
+                done
+            fi
         fi
     else
         show_msg "$lNODOWLOADS"
@@ -469,8 +514,6 @@ function gameDetailW() {
 # Show the INSTALLED Window
 #
 function installedW() {
-    local __num=
-
     if [ ! -f "$NILEINSTALLED" ] || [ "$("$JQ" ". | length" "$NILEINSTALLED")" == 0 ]; then
         show_msg "$lNOINSTALLED"
     else
@@ -503,9 +546,9 @@ function installedW() {
         2) # Uninstall
             __ID=$(echo "$__salida" | cut -d '|' -f1)
             __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
-            show_msg "Uninstalling $__NOMBRE"
+            show_msg "$lUNINSTALLING $__NOMBRE"
             "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
-            show_msg "Uninstalled $__NOMBRE"
+            show_msg "$lUNINSTALLED $__NOMBRE"
             ;;
         *) ;;
         esac
@@ -548,10 +591,9 @@ function exitW() {
 }
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!         MAIN
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#########################################
-##         MAIN
-#########################################
+
 
 #* While the user is not logged
 while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ]; do
