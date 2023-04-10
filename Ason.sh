@@ -22,7 +22,7 @@ VERSION=2.0.0b1
 # Configs of nile
 NILEUSER="$HOME/.config/nile/user.json"
 NILELIBR="$HOME/.config/nile/library.json"
-#NILEINSTALLED="$HOME/.config/nile/installed.json"
+NILEINSTALLED="$HOME/.config/nile/installed.json"
 
 # Where is the app and binaries
 ASONPATH=$(readlink -f "$(dirname "$0")")
@@ -37,6 +37,7 @@ DIRINSTALL="/run/media/mmcblk0p1/tmp/"
 ASONTITFILE="$ASONCACHE""/ason.tit"; ATIT=()
 ASONIMGFILE="$ASONCACHE""/ason.img"; AIMG=()
 ASONGENFILE="$ASONCACHE""/ason.gen"; AGEN=()
+AID_NAME="$ASONCACHE""/ason.id-name"
 
 # Queue for download
 QASON="$ASONCACHE""/ason.donwload"
@@ -84,6 +85,20 @@ Por favor, haz login correctamente."
         lOPTIONS=Opciones
         lEXIT=Salir
         lEXITMSG='Gracias por usar ASON. Hasta pronto.'
+        lDOWNLOADSM='Descargas'
+        lNODOWLOADS='No hay descargas en curso.'
+        lDOWNLOADING='Descargando'
+        lGAME='Juego'
+        lTITTLE='Titulo'
+        lGENRE='Genero'
+        lDETAILS='Detalles'
+        lBACK='Volver'
+        lINSTALL='Instalar'
+        lUNINSTALL='Desinstalar'
+        lRUN='Lanzar'
+        lDELETE='Borrar'
+        lNOINSTALLED='No hay juegos instalados'
+        lPATH='Ruta'
         ;;
     *)
         lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\n\
@@ -93,6 +108,20 @@ Please login correctly."
         lOPTIONS=Options
         lEXIT=Exit
         lEXITMSG='Thanks for use ASON. Bye Bye...'
+        lDOWNLOADSM='Downloads'
+        lNODOWLOADS='There are no downloads in progress.'
+        lDOWNLOADING='Downloading'
+        lGAME='Game'
+        lTITTLE='Tittle'
+        lGENRE='Genre'
+        lDETAILS='Details'
+        lBACK='Back'
+        lINSTALL='Install'
+        lUNINSTALL='Uninstall'
+        lRUN='Run'
+        lDELETE='Delete'
+        lNOINSTALLED='There are no installed games.'
+        lPATH='Path'
         ;;
 esac
 
@@ -228,7 +257,7 @@ function downloader()
     local __fpid=$1 ; local __file_downloading= ; local __downloading= ; local __files= ; local __name= ; local __image=
     find "$QASON" -type f -exec rm -Rf {} \;
 
-    echo "Comenzando el descargador." > "$LOGDOWNLOADER"
+    echo "Starting the Descargador." > "$LOGDOWNLOADER"
     while kill -0 "$__fpid" 2>/dev/null || [ "$(ls -A "$QASON")" ] ;do
 
         if [ "$(ls -A "$QASON")" ];then
@@ -237,22 +266,25 @@ function downloader()
             __downloading=$(basename "$__file_downloading")
             __name=$(cut -d '|' -f1 < "$__file_downloading")
             __image=$(cut -d '|' -f2 < "$__file_downloading")
-            "$YAD" --tittle=Downloading "$ICON" --image="$__image" --posx=1 --poxy=1 --no-buttons --undecorated \
+            "$YAD" --tittle="$lDOWNLOADING" "$ICON" --image="$__image" --posx=1 --poxy=1 --no-buttons --undecorated \
             --no-escape --no-focus &
             local __pimage=$!
             echo "Downloader: Downloading a game with ID: $__downloading and name $__name" >> "$LOGDOWNLOADER"
-            echo "$NILE" install --base-path "$DIRINSTALL" "$__downloading" >> "$LOGDOWNLOADER" 2>> "$LOGDOWNLOADER"
-            sleep 6
+            "$NILE" install --base-path "$DIRINSTALL" "$__downloading" >> "$LOGDOWNLOADER" 2>> "$LOGDOWNLOADER"
             echo "Downloader: Finish the game with ID: $__downloading and name $__name" >> "$LOGDOWNLOADER"
             kill "$__pimage"
             sleep 0.5
-            rm "$__file_downloading"
+            if [ -f "$__file_downloading" ];then
+                rm "$__file_downloading" 
+            else
+                "$NILE" uninstall "$__downloading" >> "$LOGDOWNLOADER" 2>> "$LOGDOWNLOADER"
+            fi
         else
             sleep 5
         fi
     done
 
-    echo "Saliendo del descargador." >> "$LOGDOWNLOADER"
+    echo "Exiting of descargador." >> "$LOGDOWNLOADER"
 
 }
 
@@ -315,7 +347,7 @@ function cache()
 #
 function loading()
 {
-    local __pid    
+    local __pid=
     
     # splash Window
     "$YAD" "$TITTLE" --center --splash --no-escape --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons & __pid=$!
@@ -325,6 +357,10 @@ function loading()
     
     if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ];then
         cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape
+    fi
+
+    if [ ! -f AID_NAME ];then
+        "$JQ" -r '.[] | "\(.id)==\(.product.title)==\(.product.productDetail.details.logoUrl)"' "$NILELIBR" >"$AID_NAME"
     fi
 
     load_cache
@@ -341,7 +377,7 @@ function loading()
 function mainW()
 {
     "$YAD" "$TITTLE" --center --image="$(fileRandomInDir "$ASONIMGMAIN")" --sticky --buttons-layout=spread \
-    --button=$lLIBRARY:0 --button=$lINSTALLED:1 --button=$lOPTIONS:2 --button="$lEXIT":3 "$ICON" --fixed --on-top
+    --button=$lLIBRARY:0 --button=$lINSTALLED:1 --button=$lOPTIONS:2 --button="$lDOWNLOADSM":3 --button="$lEXIT":100 "$ICON" --fixed --on-top
 
     MENU=$?
 }
@@ -354,7 +390,7 @@ function libraryW()
 {
     local __salida=
     __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
-    --button=Detalles:0 --button=Volver:1 --button=Instalar:2 --column=ID --column=Juego:IMG --column=Titulo --column=Genero "${ALIB[@]}")
+    --button="$lDETAILS":0 --button="$lBACK":1 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
     
     local __boton=$?
     local __index=
@@ -373,8 +409,42 @@ function libraryW()
 }
 
 ##
+# gestor_descargasW
+# Show the downloads queue
+#
+function gestor_descargasW()
+{
+    local __descargas= ; local __name= ; local __DLIB=()
+
+    if [ "$(ls -A "$QASON")" ];then
+        __descargas=("$QASON"/*)
+
+        [ "${#__descargas[@]}" -eq 0 ] || for i in "${__descargas[@]}"; do
+            __name=$(cut -d '|' -f1 < "$i")
+            __image=$(cut -d '|' -f2 < "$i")
+            __DLIB+=( "0" "$i" "$__image" "$__name" )
+        done
+
+        local __salida=
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --checklist --width=1280 --height=800 --hide-column=2 \
+    --column="" --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__DLIB[@]}")
+        
+        local __boton=$?
+
+        if [ "$__boton" -eq 0 ];then
+            for i in $(echo "$__salida" | cut -d'|' -f2);do
+                rm "$i"
+            done
+        fi
+    else
+        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --align=center --timeout=2 --undecorated --text="$lNODOWLOADS"       
+    fi
+
+}
+
+##
 # gameDetailW
-# Show the INSTALLED Window
+# Show the detail of a game
 #
 # $1 = source varname ( contains the index of game in JSON)
 #
@@ -389,7 +459,28 @@ function gameDetailW()
 #
 function installedW()
 {
-    "$YAD" "$TITTLE" --center --no-buttons --text="Installed"
+    local __num=
+
+    if [ ! -f "$NILEINSTALLED" ] || [ "$("$JQ" ". | length" "$NILEINSTALLED")" == 0 ]; then
+        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --align=center --timeout=2 --undecorated --text="$lNOINSTALLED" 
+    else
+        local __num=
+        __num=$("$JQ" ". | length" "$NILEINSTALLED")
+        local __LISTA=() ; local __ID= ; local __NOMBRE= ; local __IMG=; local __PATH=
+
+        for ((i = 0; i < __num; i++)); do
+            __ID=$("$JQ" -r ".[$i].id" "$NILEINSTALLED")
+            __NOMBRE=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f3)
+            __IMG=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f5)
+            __PATH=$("$JQ" -r .[$i].path "$NILEINSTALLED")
+            __LISTA+=( "$i" "$ASONCACHE/$(basename "$__IMG")" "$__NOMBRE" "$__PATH" )
+        done
+
+        local __salida=
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
+    --column=Index --column="$lGAME":IMG --column="$lTITTLE" --column="$lPATH" --button="$lBACK":1 --button="$lRUN":2 --button="$lUNINSTALL":0 "${__LISTA[@]}")
+
+    fi
 }
 
 ##
@@ -451,13 +542,14 @@ PID_DOWNLOADER=$!
 
 
 MENU=0
-while [ $MENU -ne 252 ] && [ $MENU -ne 3 ];do
+while [ $MENU -ne 252 ] && [ $MENU -ne 100 ];do
     mainW
     case $MENU in
         0) libraryW;;
         1) installedW;;
         2) optionW;;
-        252 | 3) exitW;;
+        3) gestor_descargasW;;
+        252 | 100) exitW;;
     esac
 done
 

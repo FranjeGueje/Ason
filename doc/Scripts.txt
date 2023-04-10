@@ -4,3 +4,11 @@ yad --list --title=ASON --with=900 --height=900 --hide-column=3  --column=Juego:
 
 yad --tile="Ason" --center --image="Ason"$(( ( RANDOM % $(ls | wc -l) )))".jpeg" --splash --timeout=3 --no-buttons --timeout-indicator=top
 
+Ver qué bottellas tenemos:
+flatpak run --command=bottles-cli com.usebottles.bottles list bottles
+
+Options:
+    * Ruta donde descargar. De tipo seleccionar carpeta.
+    * ComboBox con las botellas que pueden correr.
+    * Logoff.
+    * Acerca de...
