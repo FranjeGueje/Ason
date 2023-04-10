@@ -106,6 +106,7 @@ Por favor, haz login correctamente."
     lNOSELECT='No has seleccionado ningún elemento'
     lUNINSTALLED='Desinstalado'
     lUNINSTALLING='Desinstalando'
+    lADDDOWNLOAD='Añadido a la cola de descargas'
     ;;
 *)
     lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\n\
@@ -132,6 +133,7 @@ Please login correctly."
     lNOSELECT='You have not selected any item'
     lUNINSTALLED='Uninstalled'
     lUNINSTALLING='Uninstalling'
+    lADDDOWNLOAD='Add to download'
     ;;
 esac
 
@@ -433,25 +435,29 @@ function mainW() {
 function libraryW() {
     # Result of YAD dialog
     local __salida=
+    local __boton=0
 
-    __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
-        --button="$lDETAILS":0 --button="$lBACK":1 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
+    while [ $__boton -ne 1 ];do
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
+            --button="$lDETAILS":0 --button="$lBACK":1 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
 
-    local __boton=$?
-    local __index=
-    __index=$(echo "$__salida" | cut -d'|' -f1)
+        local __boton=$?
+        local __index=
+        __index=$(echo "$__salida" | cut -d'|' -f1)
 
-    case $__boton in
-    0) gameDetailW "$__index" ;;
-    2)
-        local __id=
-        local __name=
-        __id=$($JQ -r ".[$__index].id" "$NILELIBR")
-        __name=$(echo "$__salida" | cut -d'|' -f3)
-        add_download "$__id" "$__name" "${AIMG[$__index]}"
-        ;;
-    *) ;;
-    esac
+        case $__boton in
+        0) gameDetailW "$__index" ;;
+        2)
+            local __id=
+            local __name=
+            __id=$($JQ -r ".[$__index].id" "$NILELIBR")
+            __name=$(echo "$__salida" | cut -d'|' -f3)
+            show_msg "$lADDDOWNLOAD"
+            add_download "$__id" "$__name" "${AIMG[$__index]}"
+            ;;
+        *) ;;
+        esac
+    done
 
 }
 
