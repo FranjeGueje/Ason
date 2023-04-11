@@ -52,12 +52,6 @@ PID_DOWNLOADER=
 # Log of downloader
 LOGDOWNLOADER="$ASONCACHE"ason.downloader.log
 
-# Where is Steam, compatdata,shadercache, and grid
-#STEAM="$HOME/.local/share/Steam"
-#COMPATDATA="$STEAM/steamapps/compatdata"
-#SHADERCACHE="$STEAM/steamapps/shadercache"
-#DIRGRID="$STEAM/userdata/??*/config/grid/"
-
 # Desktop file
 #DESKTOP_NAME_FILE="$HOME/.local/share/applications/ason.desktop"
 
