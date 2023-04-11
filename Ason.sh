@@ -79,22 +79,6 @@ ASONWARNING="$ASONIMAGES/warning.png"
 TITTLE="--title=$NOMBRE - $VERSION"
 ICON="--window-icon=$ASONLOGO"
 
-#ASON_BAT="@echo off\n\n\
-#IF EXIST \"ason.dependencies\" (\n\
-#	REM Requisitos instalados\n\
-#)ELSE (\n\
-#	REM Instalar requisitos\n\
-#	echo Intalling dependencies\n\
-#	$1 \n\
-#	echo Installed > ason.dependencies\n\
-#)\n\
-#\n\
-#REM Lanzo la app\n\
-#echo Run Game\n\
-#$2 \n\
-#\n\
-#exit 0"
-
 # Set language
 case "$LANG" in
 es_ES.UTF-8)
@@ -113,7 +97,7 @@ es_ES.UTF-8)
     lBACK='Volver'
     lINSTALL='Instalar'
     lUNINSTALL='Desinstalar'
-    lRUN='Lanzar'
+    lADD_STEAM='Añadir a Steam'
     lDELETE='Borrar'
     lNOINSTALLED='No hay juegos instalados'
     lPATH='Ruta'
@@ -138,7 +122,7 @@ es_ES.UTF-8)
     lBACK='Back'
     lINSTALL='Install'
     lUNINSTALL='Uninstall'
-    lRUN='Run'
+    lADD_STEAM='Add to Steam'
     lDELETE='Delete'
     lNOINSTALLED='There are no installed games.'
     lPATH='Path'
@@ -152,6 +136,19 @@ esac
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!         FUNCTIONS
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+##
+# fileRandomInDir
+# Return a random file from dir.
+#
+# $1 = source varname ( dir )
+# return The random file in dir.
+#
+function fileRandomInDir() {
+    local __dir=$1
+
+    find "$__dir" -mindepth 0 -maxdepth 1 -type f | shuf -n 1
+}
 
 ##
 # get_cache
@@ -173,19 +170,6 @@ function get_cache() {
 #
 function delete_cache() {
     rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER"
-}
-
-##
-# fileRandomInDir
-# Return a random file from dir.
-#
-# $1 = source varname ( dir )
-# return The random file in dir.
-#
-function fileRandomInDir() {
-    local __dir=$1
-
-    find "$__dir" -mindepth 0 -maxdepth 1 -type f | shuf -n 1
 }
 
 ##
@@ -272,12 +256,12 @@ function reload_library() {
 }
 
 ##
-# downloader
+# downloader_daemon
 # Downloader main daemon
 #
 # $1 = source varname ( contains pid of father process )
 #
-function downloader() {
+function downloader_daemon() {
     # PID of father
     local __fpid=$1
     # File that is downloading
@@ -343,6 +327,37 @@ function add_download() {
 }
 
 ##
+# add_steam
+# Add a game to Steam
+#
+# $1 = source varname ( The tittle of game )
+# S2 = source varname ( The path of game )
+#
+function add_steam() {
+    local __name=$1
+    local __path=$2
+
+    local __ason_bat="@echo off\n\n\
+    IF EXIST \"ason.dependencies\" (\n\
+    	REM Requisitos instalados\n\
+    )ELSE (\n\
+    	REM Instalar requisitos\n\
+    	echo Intalling dependencies\n\
+    	$__name \n\
+    	echo Installed > ason.dependencies\n\
+    )\n\
+    \n\
+    REM Lanzo la app\n\
+    echo Run Game\n\
+    $__path \n\
+    \n\
+    exit 0"
+
+    echo "$__name $__path"
+    echo -ne "$__ason_bat" > "$__path/$__name".bat
+}
+
+##
 # show_msg
 # Show a message on screen
 #
@@ -395,10 +410,10 @@ function cache() {
 }
 
 ##
-# loading
+# loadingW
 # The global process to caching
 #
-function loading() {
+function loadingW() {
     # PID of the new dialog
     local __pid=
 
@@ -448,7 +463,7 @@ function libraryW() {
 
     while [ $__boton -ne 1 ];do
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-            --button="$lDETAILS":0 --button="$lBACK":1 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
+            --button="$lBACK":1 --button="$lDETAILS":0 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
 
         local __boton=$?
         local __index=
@@ -471,10 +486,10 @@ function libraryW() {
 }
 
 ##
-# gestor_descargasW
+# download_managerW
 # Show the downloads queue
 #
-function gestor_descargasW() {
+function download_managerW() {
     # List of downloads
     local __descargas=
     # Name of game
@@ -554,17 +569,19 @@ function installedW() {
             done
 
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-            --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lRUN":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+            --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lADD_STEAM":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
-
+            __ID=$(echo "$__salida" | cut -d '|' -f1)
+            __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
+            __PATH=$(echo "$__salida" | cut -d '|' -f4)
             case "$__boton" in
             0) # Run
                 #TODO llamar a la función de añadir a Steam que creará un .bat con los requisitos y lanzar el juego gracias a fuel.json
+                add_steam "$__NOMBRE" "$__PATH"
                 ;;
             2) # Uninstall
-                __ID=$(echo "$__salida" | cut -d '|' -f1)
-                __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
+                
                 show_msg "$lUNINSTALLING $__NOMBRE"
                 "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
                 show_msg "$lUNINSTALLED $__NOMBRE"
@@ -602,7 +619,7 @@ function aboutW() {
 }
 
 ##
-# installedW
+# exitW
 # Show the EXIT Window
 #
 function exitW() {
@@ -623,9 +640,9 @@ while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ]; do
     dologin
 done
 
-loading
+loadingW
 
-downloader $$ &
+downloader_daemon $$ &
 PID_DOWNLOADER=$!
 
 MENU=0
@@ -635,7 +652,7 @@ while [ $MENU -ne 252 ] && [ $MENU -ne 100 ]; do
     0) libraryW ;;
     1) installedW ;;
     2) optionW ;;
-    3) gestor_descargasW ;;
+    3) download_managerW ;;
     252 | 100) exitW ;;
     esac
 done
