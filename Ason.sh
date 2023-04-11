@@ -12,7 +12,6 @@
 # 0 --> OK!!!.
 ##############################################################################################################################################################
 
-
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!         GLOBAL VARIABLES
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -91,11 +90,10 @@ es_ES.UTF-8)
     lBACK='Volver'
     lINSTALL='Instalar'
     lUNINSTALL='Desinstalar'
-    lADD_STEAM='Añadir a Steam'
+    lADD_STEAM='Add to Steam'
     lDELETE='Borrar'
     lNOINSTALLED='No hay juegos instalados'
     lPATH='Ruta'
-    lNOSELECT='No has seleccionado ningún elemento'
     lUNINSTALLED='Desinstalado'
     lUNINSTALLING='Desinstalando'
     lADDDOWNLOAD='Añadido a la cola de descargas'
@@ -120,7 +118,6 @@ es_ES.UTF-8)
     lDELETE='Delete'
     lNOINSTALLED='There are no installed games.'
     lPATH='Path'
-    lNOSELECT='You have not selected any item'
     lUNINSTALLED='Uninstalled'
     lUNINSTALLING='Uninstalling'
     lADDDOWNLOAD='Add to download'
@@ -210,13 +207,13 @@ function deserialize_array() {
 function save_cache() {
     local __serialized=
     serialize_array ATIT __serialized '|'
-    echo "$__serialized" > "$ASONTITFILE"
+    echo "$__serialized" >"$ASONTITFILE"
     serialize_array AGEN __serialized '|'
-    echo "$__serialized" > "$ASONGENFILE"
+    echo "$__serialized" >"$ASONGENFILE"
     serialize_array AIMG __serialized '|'
-    echo "$__serialized" > "$ASONIMGFILE"
+    echo "$__serialized" >"$ASONIMGFILE"
 
-    echo "$VERSION" > "$ASONCACHEVER"
+    echo "$VERSION" >"$ASONCACHEVER"
 }
 
 ##
@@ -246,7 +243,7 @@ function reload_library() {
     for ((i = 0; i < __num; i++)); do
         ALIB+=("$i" "${AIMG[$i]}" "$(echo "${ATIT[$i]}" | iconv -c)" "${AGEN[$i]}")
     done
-    
+
 }
 
 ##
@@ -281,13 +278,13 @@ function downloader_daemon() {
             __downloading=$(basename "$__file_downloading")
             __name=$(cut -d '|' -f1 <"$__file_downloading")
             __image=$(cut -d '|' -f2 <"$__file_downloading")
-            
+
             {
                 echo "Downloader: Downloading a game with ID: $__downloading and name $__name"
                 "$NILE" install --base-path "$DIRINSTALL" "$__downloading"
                 echo "Downloader: Finish the game with ID: $__downloading and name $__name"
-            }  >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
-            
+            } >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
+
             sleep 0.5
             if [ -f "$__file_downloading" ]; then
                 rm "$__file_downloading"
@@ -348,7 +345,7 @@ function add_steam() {
     exit 0"
 
     echo "$__name $__path"
-    echo -ne "$__ason_bat" > "$__path/$__name".bat
+    echo -ne "$__ason_bat" >"$__path/$__name".bat
 }
 
 ##
@@ -359,7 +356,7 @@ function add_steam() {
 # $2 = source varname ( [OPTIONAL] image to show )
 #
 function show_msg() {
-    if [ -n "$2" ] ;then
+    if [ -n "$2" ]; then
         "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1" --image="$2"
     else
         "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1"
@@ -395,8 +392,8 @@ function cache() {
         __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
         __file="$ASONCACHE/$(basename "$__url")"
         [ -f "$__file" ] || get_cache "$__url" "$__file"
-        ATIT+=("$($JQ -r ".[$i].product.title" "$NILELIBR")")
-        AGEN+=("$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR")")
+        ATIT+=("$($JQ -r ".[$i].product.title" "$NILELIBR" | iconv -c)")
+        AGEN+=("$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR" | iconv -c)")
         AIMG+=("$__file")
     done
 
@@ -425,7 +422,7 @@ function loadingW() {
     fi
 
     if [ ! -f AID_NAME ]; then
-        "$JQ" -r '.[] | "\(.id)==\(.product.title)==\(.product.productDetail.details.logoUrl)"' "$NILELIBR" >"$AID_NAME"
+        "$JQ" -r '.[] | "\(.id)==\(.product.title)==\(.product.productDetail.details.logoUrl)"' "$NILELIBR" | iconv -c >"$AID_NAME"
     fi
 
     load_cache
@@ -455,7 +452,7 @@ function libraryW() {
     local __salida=
     local __boton=0
 
-    while [ $__boton -ne 1 ];do
+    while [ $__boton -ne 1 ]; do
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
             --button="$lBACK":1 --button="$lDETAILS":0 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
 
@@ -484,42 +481,43 @@ function libraryW() {
 # Show the downloads queue
 #
 function download_managerW() {
-    # List of downloads
-    local __descargas=
-    # Name of game
-    local __name=
-    # Image of game
-    local __image=
-    # List of Ason's download
-    local __ADOWN=()
 
-    if [ "$(ls -A "$QASON")" ]; then
-        __descargas=("$QASON"/*)
+    # Result of YAD dialog
+    local __salida=
+    local __boton=0
+    while [ $__boton -ne 1 ]; do
 
-        [ "${#__descargas[@]}" -eq 0 ] || for i in "${__descargas[@]}"; do
-            __name=$(cut -d '|' -f1 <"$i")
-            __image=$(cut -d '|' -f2 <"$i")
-            __ADOWN+=("0" "$i" "$__image" "$__name")
-        done
+        if [ "$(ls -A "$QASON")" ]; then
+            # List of downloads
+            local __descargas=
+            # Name of game
+            local __name=
+            # Image of game
+            local __image=
+            # List of Ason's download
+            local __ADOWN=()
+            __descargas=("$QASON"/*)
 
-        local __salida=
-        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --checklist --width=1280 --height=800 --hide-column=2 --sticky --buttons-layout=spread \
-            --column="" --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__ADOWN[@]}")
+            [ "${#__descargas[@]}" -eq 0 ] || for i in "${__descargas[@]}"; do
+                __name=$(cut -d '|' -f1 <"$i")
+                __image=$(cut -d '|' -f2 <"$i")
+                __ADOWN+=("$i" "$__image" "$__name")
+            done
 
-        local __boton=$?
+            local __salida=
+            __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
+                --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__ADOWN[@]}")
 
-        if [ "$__boton" -eq 0 ]; then
-            if [ ${#__salida} -eq 0 ];then
-                show_msg "$lNOSELECT"
-            else
-                for i in $(echo "$__salida" | cut -d'|' -f2); do
-                    rm "$i"
-                done
+            local __boton=$?
+
+            if [ "$__boton" -eq 0 ]; then
+                rm "$(echo "$__salida" | cut -d'|' -f1)"
             fi
+        else
+            show_msg "$lNODOWLOADS"
+            __boton=1
         fi
-    else
-        show_msg "$lNODOWLOADS"
-    fi
+    done
 
 }
 
@@ -538,14 +536,14 @@ function gameDetailW() {
 # Show the INSTALLED Window
 #
 function installedW() {
-        
+
     if [ ! -f "$NILEINSTALLED" ] || [ "$("$JQ" ". | length" "$NILEINSTALLED")" == 0 ]; then
         show_msg "$lNOINSTALLED"
     else
         # Result of YAD dialog
         local __salida=
         local __boton=0
-        while [ $__boton -ne 1 ];do
+        while [ $__boton -ne 1 ]; do
             local __num=
             __num=$("$JQ" ". | length" "$NILEINSTALLED")
             local __LISTA=()
@@ -556,35 +554,36 @@ function installedW() {
 
             for ((i = 0; i < __num; i++)); do
                 __ID=$("$JQ" -r ".[$i].id" "$NILEINSTALLED")
-                __NOMBRE=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f3)
+                __NOMBRE=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f3 | iconv -c)
                 __IMG=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f5)
-                __PATH=$("$JQ" -r .[$i].path "$NILEINSTALLED")
+                __PATH=$("$JQ" -r .[$i].path "$NILEINSTALLED" | iconv -c)
                 __LISTA+=("$i" "$__NOMBRE" "$ASONCACHE/$(basename "$__IMG")" "$__PATH")
             done
 
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-            --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lADD_STEAM":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+                --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lADD_STEAM":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
             __ID=$(echo "$__salida" | cut -d '|' -f1)
             __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
-            __PATH=$(echo "$__salida" | cut -d '|' -f4)
+            __PATH=$("$JQ" -r .["$__ID"].path "$NILEINSTALLED")
+
             case "$__boton" in
             0) # Run
                 #TODO llamar a la función de añadir a Steam que creará un .bat con los requisitos y lanzar el juego gracias a fuel.json
                 add_steam "$__NOMBRE" "$__PATH"
                 ;;
             2) # Uninstall
-                
-                show_msg "$lUNINSTALLING $__NOMBRE"
+
+                show_msg "$lUNINSTALLING $(echo "$__NOMBRE" | iconv -c)"
                 "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
-                show_msg "$lUNINSTALLED $__NOMBRE"
+                show_msg "$lUNINSTALLED $(echo "$__NOMBRE" | iconv -c)"
                 ;;
             *) ;;
             esac
         done
     fi
-    
+
 }
 
 ##
@@ -626,7 +625,6 @@ function exitW() {
 #!         MAIN
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
 #* While the user is not logged
 while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ]; do
     "$YAD" "$TITTLE" --center --splash --image="$ASONWARNING" --text="$lNOLOGIN" \
@@ -643,8 +641,8 @@ MENU=0
 while [ $MENU -ne 252 ] && [ $MENU -ne 100 ]; do
     mainW
     case $MENU in
-    0) libraryW ;;
-    1) installedW ;;
+    0) libraryW >/tmp/ason1.txt 2>/tmp/ason2.txt ;;
+    1) installedW >/tmp/ason1.txt 2>/tmp/ason2.txt ;;
     2) optionW ;;
     3) download_managerW ;;
     252 | 100) exitW ;;
