@@ -79,19 +79,33 @@ ASONWARNING="$ASONIMAGES/warning.png"
 TITTLE="--title=$NOMBRE - $VERSION"
 ICON="--window-icon=$ASONLOGO"
 
+#ASON_BAT="@echo off\n\n\
+#IF EXIST \"ason.dependencies\" (\n\
+#	REM Requisitos instalados\n\
+#)ELSE (\n\
+#	REM Instalar requisitos\n\
+#	echo Intalling dependencies\n\
+#	$1 \n\
+#	echo Installed > ason.dependencies\n\
+#)\n\
+#\n\
+#REM Lanzo la app\n\
+#echo Run Game\n\
+#$2 \n\
+#\n\
+#exit 0"
+
 # Set language
 case "$LANG" in
 es_ES.UTF-8)
-    lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder login en Amazon Games.\n\n\
-Por favor, haz login correctamente."
+    lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder login en Amazon Games.\n\nPor favor, haz login correctamente."
     lLIBRARY=Biblioteca
-    lINSTALLED=Instalados
+    lINSTALLED=Instalado
     lOPTIONS=Opciones
     lEXIT=Salir
     lEXITMSG='Gracias por usar ASON. Hasta pronto.'
     lDOWNLOADSM='Descargas'
     lNODOWLOADS='No hay descargas en curso.'
-    lDOWNLOADING='Descargando'
     lGAME='Juego'
     lTITTLE='Titulo'
     lGENRE='Genero'
@@ -109,8 +123,7 @@ Por favor, haz login correctamente."
     lADDDOWNLOAD='Añadido a la cola de descargas'
     ;;
 *)
-    lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\n\
-Please login correctly."
+    lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\nPlease login correctly."
     lLIBRARY=Library
     lINSTALLED=Installed
     lOPTIONS=Options
@@ -118,7 +131,6 @@ Please login correctly."
     lEXITMSG='Thanks for use ASON. Bye Bye...'
     lDOWNLOADSM='Downloads'
     lNODOWLOADS='There are no downloads in progress.'
-    lDOWNLOADING='Downloading'
     lGAME='Game'
     lTITTLE='Tittle'
     lGENRE='Genre'
@@ -295,18 +307,17 @@ function downloader() {
             __downloading=$(basename "$__file_downloading")
             __name=$(cut -d '|' -f1 <"$__file_downloading")
             __image=$(cut -d '|' -f2 <"$__file_downloading")
-            "$YAD" --tittle="$lDOWNLOADING" "$ICON" --image="$__image" --posx=1 --poxy=1 --no-buttons --undecorated \
-                --no-escape --no-focus &
-            local __pimage=$!
+            
             {
                 echo "Downloader: Downloading a game with ID: $__downloading and name $__name"
                 "$NILE" install --base-path "$DIRINSTALL" "$__downloading"
                 echo "Downloader: Finish the game with ID: $__downloading and name $__name"
             }  >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
-            kill "$__pimage"
+            
             sleep 0.5
             if [ -f "$__file_downloading" ]; then
                 rm "$__file_downloading"
+                show_msg "$lINSTALLED" "$__image"
             else
                 "$NILE" uninstall "$__downloading" >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
             fi
@@ -340,9 +351,14 @@ function add_download() {
 # Show a message on screen
 #
 # $1 = source varname ( Text to show )
+# $2 = source varname ( [OPTIONAL] image to show )
 #
 function show_msg() {
-    "$YAD" "$TITTLE" "$ICON" --center --no-buttons --align=center --timeout=2 --undecorated --text="$1"
+    if [ -n "$2" ] ;then
+        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1" --image="$2"
+    else
+        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1"
+    fi
 }
 
 #########################
@@ -438,7 +454,7 @@ function libraryW() {
     local __boton=0
 
     while [ $__boton -ne 1 ];do
-        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
             --button="$lDETAILS":0 --button="$lBACK":1 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
 
         local __boton=$?
@@ -452,7 +468,7 @@ function libraryW() {
             local __name=
             __id=$($JQ -r ".[$__index].id" "$NILELIBR")
             __name=$(echo "$__salida" | cut -d'|' -f3)
-            show_msg "$lADDDOWNLOAD"
+            show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
             add_download "$__id" "$__name" "${AIMG[$__index]}"
             ;;
         *) ;;
@@ -485,7 +501,7 @@ function gestor_descargasW() {
         done
 
         local __salida=
-        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --checklist --width=1280 --height=800 --hide-column=2 \
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --checklist --width=1280 --height=800 --hide-column=2 --sticky --buttons-layout=spread \
             --column="" --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__ADOWN[@]}")
 
         local __boton=$?
@@ -520,45 +536,51 @@ function gameDetailW() {
 # Show the INSTALLED Window
 #
 function installedW() {
+        
     if [ ! -f "$NILEINSTALLED" ] || [ "$("$JQ" ". | length" "$NILEINSTALLED")" == 0 ]; then
         show_msg "$lNOINSTALLED"
     else
-        local __num=
-        __num=$("$JQ" ". | length" "$NILEINSTALLED")
-        local __LISTA=()
-        local __ID=
-        local __NOMBRE=
-        local __IMG=
-        local __PATH=
-
-        for ((i = 0; i < __num; i++)); do
-            __ID=$("$JQ" -r ".[$i].id" "$NILEINSTALLED")
-            __NOMBRE=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f3)
-            __IMG=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f5)
-            __PATH=$("$JQ" -r .[$i].path "$NILEINSTALLED")
-            __LISTA+=("$i" "$__NOMBRE" "$ASONCACHE/$(basename "$__IMG")" "$__PATH")
-        done
-
+        # Result of YAD dialog
         local __salida=
-        __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 \
-            --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lRUN":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+        local __boton=0
+        while [ $__boton -ne 1 ];do
+            local __num=
+            __num=$("$JQ" ". | length" "$NILEINSTALLED")
+            local __LISTA=()
+            local __ID=
+            local __NOMBRE=
+            local __IMG=
+            local __PATH=
 
-        local __boton=$?
+            for ((i = 0; i < __num; i++)); do
+                __ID=$("$JQ" -r ".[$i].id" "$NILEINSTALLED")
+                __NOMBRE=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f3)
+                __IMG=$(grep "$__ID" <"$AID_NAME" | cut -d '=' -f5)
+                __PATH=$("$JQ" -r .[$i].path "$NILEINSTALLED")
+                __LISTA+=("$i" "$__NOMBRE" "$ASONCACHE/$(basename "$__IMG")" "$__PATH")
+            done
 
-        case "$__boton" in
-        0) # Run
-            echo "run $__salida"
-            ;;
-        2) # Uninstall
-            __ID=$(echo "$__salida" | cut -d '|' -f1)
-            __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
-            show_msg "$lUNINSTALLING $__NOMBRE"
-            "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
-            show_msg "$lUNINSTALLED $__NOMBRE"
-            ;;
-        *) ;;
-        esac
+            __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
+                --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lRUN":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+
+            local __boton=$?
+
+            case "$__boton" in
+            0) # Run
+                echo "run $__salida"
+                ;;
+            2) # Uninstall
+                __ID=$(echo "$__salida" | cut -d '|' -f1)
+                __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
+                show_msg "$lUNINSTALLING $__NOMBRE"
+                "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
+                show_msg "$lUNINSTALLED $__NOMBRE"
+                ;;
+            *) ;;
+            esac
+        done
     fi
+    
 }
 
 ##
