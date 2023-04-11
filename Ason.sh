@@ -153,10 +153,6 @@ esac
 #!         FUNCTIONS
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#########################
-# AUXILIARY FUNCT BEGIN #
-#########################
-
 ##
 # get_cache
 # Download the cache images from internet.
@@ -361,9 +357,6 @@ function show_msg() {
     fi
 }
 
-#########################
-# AUXILIARY FUNCT END   #
-#########################
 ##
 # dologin
 # Login on Amazon Games over Nile.
@@ -561,13 +554,13 @@ function installedW() {
             done
 
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-                --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lRUN":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+            --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lRUN":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
 
             case "$__boton" in
             0) # Run
-                echo "run $__salida"
+                #TODO llamar a la función de añadir a Steam que creará un .bat con los requisitos y lanzar el juego gracias a fuel.json
                 ;;
             2) # Uninstall
                 __ID=$(echo "$__salida" | cut -d '|' -f1)
