@@ -591,15 +591,7 @@ function installedW() {
 # Show the OPTION Window
 #
 function optionW() {
-    "$YAD" "$TITTLE" --center --no-buttons --text="Options"
-}
-
-##
-# loginW
-# Show the LOGIN Window
-#
-function loginW() {
-    "$YAD" "$TITTLE" --center --no-buttons --text="login"
+    aboutW
 }
 
 ##
