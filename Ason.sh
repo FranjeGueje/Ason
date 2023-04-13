@@ -39,6 +39,8 @@ ASONTITFILE="$ASONCACHE""/ason.tit"
 ATIT=()
 ASONIMGFILE="$ASONCACHE""/ason.img"
 AIMG=()
+ASONIMGDFILE="$ASONCACHE""/ason.img_detail"
+AIMGD=()
 ASONGENFILE="$ASONCACHE""/ason.gen"
 AGEN=()
 AID_NAME="$ASONCACHE""/ason.id-name"
@@ -102,6 +104,7 @@ es_ES.UTF-8)
     lRUNMENU='Lanzar...'
     lUPDATE='Actualizar'
     lUPDATING='Actualizando'
+    lSYNCHRONIZING='Sincronizando'
     ;;
 *)
     lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\nPlease login correctly."
@@ -131,6 +134,7 @@ es_ES.UTF-8)
     lRUNMENU='Run...'
     lUPDATE='Update'
     lUPDATING='Updating'
+    lSYNCHRONIZING='Synchronizing'
     ;;
 esac
 
@@ -170,7 +174,7 @@ function get_cache() {
 # Delete all cache of Ason
 #
 function delete_cache() {
-    rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER" 2>/dev/null
+    rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONIMGDFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER" 2>/dev/null
 }
 
 ##
@@ -222,6 +226,8 @@ function save_cache() {
     echo "$__serialized" >"$ASONGENFILE"
     serialize_array AIMG __serialized '|'
     echo "$__serialized" >"$ASONIMGFILE"
+    serialize_array AIMGD __serialized '|'
+    echo "$__serialized" >"$ASONIMGDFILE"
 
     echo "$VERSION" >"$ASONCACHEVER"
 }
@@ -238,6 +244,8 @@ function load_cache() {
     deserialize_array __serialized AGEN '|'
     __serialized="$(cat "$ASONIMGFILE")"
     deserialize_array __serialized AIMG '|'
+    __serialized="$(cat "$ASONIMGDFILE")"
+    deserialize_array __serialized AIMGD '|'
 }
 
 ##
@@ -392,6 +400,8 @@ function cache() {
     AGEN=()
     # List of images
     AIMG=()
+    # List of images on detail dialog
+    AIMGD=()
 
     local __num=
     __num=$($JQ ". | length" "$NILELIBR")
@@ -405,6 +415,10 @@ function cache() {
         ATIT+=("$($JQ -r ".[$i].product.title" "$NILELIBR" | iconv -c)")
         AGEN+=("$($JQ -r ".[$i].product.productDetail.details.genres[0]" "$NILELIBR" | iconv -c)")
         AIMG+=("$__file")
+        __url="$($JQ -r ".[$i].product.productDetail.details.pgCrownImageUrl" "$NILELIBR")"
+        __file="$ASONCACHE/$(basename "$__url")"
+        [ -f "$__file" ] || get_cache "$__url" "$__file"
+        AIMGD+=("$__file")
     done
 
     save_cache
@@ -426,7 +440,7 @@ function loadingW() {
 
     local __ver_cache=0 && [ -f "$ASONCACHEVER" ] && __ver_cache=$(cat "$ASONCACHEVER")
 
-    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ] || [ "$__ver_cache" != "$VERSION" ]; then
+    if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ] || [ "$__ver_cache" != "$VERSION" ] || [ ! -f "$ASONIMGDFILE" ]; then
         delete_cache
         cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape
     fi
@@ -508,16 +522,18 @@ function libraryW() {
             ;;
         3) # Buscar
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --no-escape --button="OK":0 --form --field="$lSEARCH:")
-            __salida=${__salida::-1} 
+            __salida=${__salida::-1}
             libraryW "$__salida"
             break
             ;;
         4) # Sincronizar
+            show_msg "$lSYNCHRONIZING..." &
             local __num= && local __num_new=
             __num=$($JQ ". | length" "$NILELIBR")
-            "$NILE" library sync
+            "$NILE" library sync 2>/tmp/ason.msg
             __num_new=$($JQ ". | length" "$NILELIBR")
-            if [ "$__num" -ne "$__num_new" ];then
+            show_msg "$(cat /tmp/ason.msg)"
+            if [ "$__num" -ne "$__num_new" ]; then
                 delete_cache
                 loadingW
                 break
@@ -581,6 +597,7 @@ function download_managerW() {
 #
 function gameDetailW() {
     "$YAD" "$TITTLE" --center --no-buttons --text="Game Detail $1"
+    #bin/jq -r '.[$1].product.productDetail.details | "\(.developer)|\(.esrbRating)|\(.gameModes)|\(.genres)|\(.publisher)|\(.genres)|\(.releaseDate)|\(.shortDescription)|\(.screenshots)"' /home/guerrero/.config/nile/library.json
 }
 
 ##
@@ -614,14 +631,12 @@ function installedW() {
 
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
                 --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" \
-                --button="$lBACK":1 --button="$lRUNMENU":0 --button="$lUPDATE":3 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+                --button="$lBACK":1 --button="$lRUNMENU":0 --button="$lUPDATE":4 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
             __ID=$(echo "$__salida" | cut -d '|' -f1)
             __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
             __PATH=$("$JQ" -r .["$__ID"].path "$NILEINSTALLED")
-
-            echo $__ID $__NOMBRE $__PATH 
 
             case "$__boton" in
             0) # Run
@@ -630,15 +645,16 @@ function installedW() {
                 ;;
             2) # Uninstall
                 show_msg "$lUNINSTALLING $(echo "$__NOMBRE" | iconv -c)" &
-                echo "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
-                show_msg "$lUNINSTALLED $(echo "$__NOMBRE" | iconv -c)"
+                "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")" 2>/tmp/ason.msg
+                show_msg "$lUNINSTALLED $(echo "$__NOMBRE" | iconv -c):\n $(cat /tmp/ason.msg)"
                 ;;
-            3) # Update
+            4) # Update
                 show_msg "$lUPDATING $(echo "$__NOMBRE" | iconv -c)" &
-                echo "$NILE" install --base-path "$DIRINSTALL" "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
+                "$NILE" install --base-path "$DIRINSTALL" "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")" 2>/tmp/ason.msg
+                show_msg "Updated $(echo "$__NOMBRE" | iconv -c):\n $(cat /tmp/ason.msg)"
                 ;;
-            *)
-                ;;
+            *) ;;
+
             esac
         done
     fi
