@@ -90,13 +90,18 @@ es_ES.UTF-8)
     lBACK='Volver'
     lINSTALL='Instalar'
     lUNINSTALL='Desinstalar'
-    lADD_STEAM='Add to Steam'
+    #lADD_STEAM='Add to Steam'
     lDELETE='Borrar'
     lNOINSTALLED='No hay juegos instalados'
     lPATH='Ruta'
     lUNINSTALLED='Desinstalado'
     lUNINSTALLING='Desinstalando'
     lADDDOWNLOAD='Añadido a la cola de descargas'
+    lSEARCH='Buscar'
+    lSYNC='Sincronizar'
+    lRUNMENU='Lanzar...'
+    lUPDATE='Actualizar'
+    lUPDATING='Actualizando'
     ;;
 *)
     lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\nPlease login correctly."
@@ -114,13 +119,18 @@ es_ES.UTF-8)
     lBACK='Back'
     lINSTALL='Install'
     lUNINSTALL='Uninstall'
-    lADD_STEAM='Add to Steam'
+    #lADD_STEAM='Add to Steam'
     lDELETE='Delete'
     lNOINSTALLED='There are no installed games.'
     lPATH='Path'
     lUNINSTALLED='Uninstalled'
     lUNINSTALLING='Uninstalling'
     lADDDOWNLOAD='Add to download'
+    lSEARCH='Search'
+    lSYNC='Sync'
+    lRUNMENU='Run...'
+    lUPDATE='Update'
+    lUPDATING='Updating'
     ;;
 esac
 
@@ -160,7 +170,7 @@ function get_cache() {
 # Delete all cache of Ason
 #
 function delete_cache() {
-    rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER"
+    rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER" 2>/dev/null
 }
 
 ##
@@ -447,22 +457,48 @@ function mainW() {
 # libraryW
 # Show the LIBRARY Window
 #
+# $1 = source varname ( [OPTIONAL] text to search)
+#
 function libraryW() {
+    local __ASLIB=()
+
+    if [ -n "$1" ]; then
+        local __string=$1 && local __i=0 && local __ID= && local __IMG= && local __TITTLE= && local __GENRE= && local __long=
+        __long=${#ALIB[@]}
+
+        while [ "$__i" -lt "$__long" ]; do
+            __ID=${ALIB[$__i]} && __i=$((__i + 1))
+            __IMG=${ALIB[$__i]} && __i=$((__i + 1))
+            __TITTLE=${ALIB[$__i]} && __i=$((__i + 1))
+            __GENRE=${ALIB[$__i]} && __i=$((__i + 1))
+
+            if echo "$__TITTLE" | grep -i "$__string" >/dev/null; then
+                __ASLIB+=("$__ID" "$__IMG" "$__TITTLE" "$__GENRE")
+            fi
+
+        done
+    else
+        __ASLIB=("${ALIB[@]}")
+    fi
+
     # Result of YAD dialog
     local __salida=
     local __boton=0
 
     while [ $__boton -ne 1 ]; do
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-            --button="$lBACK":1 --button="$lDETAILS":0 --button="$lINSTALL":2 --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${ALIB[@]}")
+            --button="$lBACK":1 --button="$lSEARCH":3 --button="$lDETAILS":0 --button="$lSYNC":4 --button="$lINSTALL":2 \
+            --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${__ASLIB[@]}")
 
         local __boton=$?
         local __index=
         __index=$(echo "$__salida" | cut -d'|' -f1)
 
         case $__boton in
+        # Details
         0) gameDetailW "$__index" ;;
-        2)
+
+        2) # Install
             local __id=
             local __name=
             __id=$($JQ -r ".[$__index].id" "$NILELIBR")
@@ -470,10 +506,26 @@ function libraryW() {
             show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
             add_download "$__id" "$__name" "${AIMG[$__index]}"
             ;;
+        3) # Buscar
+            __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --no-escape --button="OK":0 --form --field="$lSEARCH:")
+            __salida=${__salida::-1} 
+            libraryW "$__salida"
+            break
+            ;;
+        4) # Sincronizar
+            local __num= && local __num_new=
+            __num=$($JQ ". | length" "$NILELIBR")
+            "$NILE" library sync
+            __num_new=$($JQ ". | length" "$NILELIBR")
+            if [ "$__num" -ne "$__num_new" ];then
+                delete_cache
+                loadingW
+                break
+            fi
+            ;;
         *) ;;
         esac
     done
-
 }
 
 ##
@@ -561,12 +613,15 @@ function installedW() {
             done
 
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-                --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" --button="$lBACK":1 --button="$lADD_STEAM":0 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+                --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" \
+                --button="$lBACK":1 --button="$lRUNMENU":0 --button="$lUPDATE":3 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
             __ID=$(echo "$__salida" | cut -d '|' -f1)
             __NOMBRE=$(echo "$__salida" | cut -d '|' -f2)
             __PATH=$("$JQ" -r .["$__ID"].path "$NILEINSTALLED")
+
+            echo $__ID $__NOMBRE $__PATH 
 
             case "$__boton" in
             0) # Run
@@ -574,12 +629,16 @@ function installedW() {
                 add_steam "$__NOMBRE" "$__PATH"
                 ;;
             2) # Uninstall
-
-                show_msg "$lUNINSTALLING $(echo "$__NOMBRE" | iconv -c)"
-                "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
+                show_msg "$lUNINSTALLING $(echo "$__NOMBRE" | iconv -c)" &
+                echo "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
                 show_msg "$lUNINSTALLED $(echo "$__NOMBRE" | iconv -c)"
                 ;;
-            *) ;;
+            3) # Update
+                show_msg "$lUPDATING $(echo "$__NOMBRE" | iconv -c)" &
+                echo "$NILE" install --base-path "$DIRINSTALL" "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")"
+                ;;
+            *)
+                ;;
             esac
         done
     fi
@@ -633,8 +692,8 @@ MENU=0
 while [ $MENU -ne 252 ] && [ $MENU -ne 100 ]; do
     mainW
     case $MENU in
-    0) libraryW >/tmp/ason1.txt 2>/tmp/ason2.txt ;;
-    1) installedW >/tmp/ason1.txt 2>/tmp/ason2.txt ;;
+    0) libraryW ;;
+    1) installedW ;;
     2) optionW ;;
     3) download_managerW ;;
     252 | 100) exitW ;;
