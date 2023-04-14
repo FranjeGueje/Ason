@@ -356,23 +356,39 @@ function add_steam() {
     local __name=$1
     local __path=$2
 
+    local __F=$__path/fuel.json
+
+    local __exec= ; local __dep=
+    __exec="$("$JQ" .Main.Command "$__F") $("$JQ" -r '.Main.Args | @sh' "$__F")"
+
+    local __dep= ; local __num= ; local __args= ; #local ARG=()
+    __num=$("$JQ" ".PostInstall | length" "$__F")
+    for ((i = 0; i < __num; i++)); do
+        __args=$("$JQ" ".PostInstall[$i].Args | length" "$__F");
+        #ARG=();
+        #for ((j = 0; j < __args; j++)); do
+        #    ARG+=("$("$JQ" ".PostInstall[$i].Args[$j]" "$__F")")
+        #done
+        #__dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") ${ARG[*]}"
+        __dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") $("$JQ" -r ".PostInstall[$i].Args | @sh" "$__F")"
+    done
+
     local __ason_bat="@echo off\n\n\
     IF EXIST \"ason.dependencies\" (\n\
-    	REM Requisitos instalados\n\
+    	REM Dependencies are installed\n\
     )ELSE (\n\
-    	REM Instalar requisitos\n\
+    	REM To install the dependencies\n\
     	echo Intalling dependencies\n\
-    	$__name \n\
+    	$__dep \n\
     	echo Installed > ason.dependencies\n\
     )\n\
     \n\
-    REM Lanzo la app\n\
-    echo Run Game\n\
-    $__path \n\
+    REM Run the app\n\
+    echo Run Game...\n\
+    $__exec \n\
     \n\
     exit 0"
-
-    echo "$__name $__path"
+    
     echo -ne "$__ason_bat" >"$__path/$__name".bat
 }
 
