@@ -12,3 +12,6 @@ Options:
     * ComboBox con las botellas que pueden correr.
     * Logoff.
     * Acerca de...
+
+
+yad --image="61-ze7PdLAL_new.jpg" --undecorated --text="$(jq -r '.['88'].product.productDetail.details | "\(.releaseDate)|\(.developer)|\(.publisher)|\(.esrbRating)|\(.genres)|\(.gameModes)|\(.shortDescription)|\(.screenshots)"' /home/deck/.config/nile/library.json )"

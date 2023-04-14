@@ -105,6 +105,11 @@ es_ES.UTF-8)
     lUPDATE='Actualizar'
     lUPDATING='Actualizando'
     lSYNCHRONIZING='Sincronizando'
+    lREFRESH='Refrescar'
+    lWAIT='Esperar'
+    lASKWAIT='Hay descargas en curso.\n\n¿Quieres esperar a que terminen antes de salir?'
+    lALLSTOPED='Todos los procesos han sido detenidos'
+    lALLNOSTOPED='Cerrando Ason pero continuando las descargas en segundo plano.\n\nAparecerá un mensaje al finalizar'
     ;;
 *)
     lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\nPlease login correctly."
@@ -135,6 +140,11 @@ es_ES.UTF-8)
     lUPDATE='Update'
     lUPDATING='Updating'
     lSYNCHRONIZING='Synchronizing'
+    lREFRESH='Refresh'
+    lWAIT='Wait'
+    lASKWAIT='There are downloads in progress.\n\nDo you want to wait for them to finish before exiting?'
+    lALLSTOPED='All processes have been stopped.'
+    lALLNOSTOPED='Closing Ason but continuing downloads in the background.\n\nA message will appear when finished.'
     ;;
 esac
 
@@ -433,7 +443,7 @@ function loadingW() {
     local __pid=
 
     # splash Window
-    "$YAD" "$TITTLE" --center --splash --no-escape --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons &
+    "$YAD" "$TITTLE" --center --splash  --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons &
     __pid=$!
 
     [ -d "$ASONCACHE" ] || mkdir -p "$ASONCACHE"
@@ -499,7 +509,7 @@ function libraryW() {
     local __salida=
     local __boton=0
 
-    while [ $__boton -ne 1 ]; do
+    while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
             --button="$lBACK":1 --button="$lSEARCH":3 --button="$lDETAILS":0 --button="$lSYNC":4 --button="$lINSTALL":2 \
             --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${__ASLIB[@]}")
@@ -553,7 +563,7 @@ function download_managerW() {
     # Result of YAD dialog
     local __salida=
     local __boton=0
-    while [ $__boton -ne 1 ]; do
+    while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
 
         if [ "$(ls -A "$QASON")" ]; then
             # List of downloads
@@ -574,7 +584,7 @@ function download_managerW() {
 
             local __salida=
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-                --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lDELETE":0 "${__ADOWN[@]}")
+                --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lREFRESH":2 --button="$lDELETE":0 "${__ADOWN[@]}")
 
             local __boton=$?
 
@@ -596,8 +606,36 @@ function download_managerW() {
 # $1 = source varname ( contains the index of game in JSON)
 #
 function gameDetailW() {
-    "$YAD" "$TITTLE" --center --no-buttons --text="Game Detail $1"
-    #bin/jq -r '.[$1].product.productDetail.details | "\(.developer)|\(.esrbRating)|\(.gameModes)|\(.genres)|\(.publisher)|\(.genres)|\(.releaseDate)|\(.shortDescription)|\(.screenshots)"' /home/guerrero/.config/nile/library.json
+    local __index=$1
+    local __fecha= ; local __developer= ;local __publicador= ;local __esrb= ;local __generos= ;local __modos= ;local __desc= ; local __info=
+    __info=$("$JQ" -r '.['"$__index"'].product.productDetail.details | "\(.releaseDate)|\(.developer)|\(.publisher)|\(.esrbRating)|\(.genres)|\(.gameModes)|\(.shortDescription)|\(.screenshots)"' "$NILELIBR")
+    
+    __fecha=$(echo "$__info" | cut -d '|' -f1)
+    __developer=$(echo "$__info" | cut -d '|' -f2)
+    __publicador=$(echo "$__info" | cut -d '|' -f3)
+    __esrb=$(echo "$__info" | cut -d '|' -f4)
+    __generos=$(echo "$__info" | cut -d '|' -f5)
+    __modos=$(echo "$__info" | cut -d '|' -f6)
+    __desc=$(echo "$__info" | cut -d '|' -f7)
+
+    local __text=
+    __text="<b>Rel. Date:</b> $__fecha\t<b>Dev:</b> $__developer\t<b>Publ:</b> $__publicador\n\n<b>ESRB:</b> $__esrb\t<b>Genre:</b> $__generos\t<b>Modes:</b> $__modos\n\n<b>Description:</b> $__desc"
+
+    local __image=
+    [ "$(basename "${AIMGD[$__index]}")" == 'null' ] && __image=${AIMG[$__index]} || __image=${AIMGD[$__index]}
+    
+    "$YAD" "$TITTLE" --center --image="$__image" --sticky --buttons-layout=spread --width=512 --form --field="$__text":LBL --button="$lBACK":1 --button="$lINSTALL":8 > /dev/null
+
+    local __boton=$?
+    if [ "$__boton" -eq 8 ];then
+        local __id=
+        local __name=
+        __id=$($JQ -r ".[$__index].id" "$NILELIBR")
+        __name=${ATIT[$__index]}
+        show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
+        add_download "$__id" "$__name" "${AIMG[$__index]}"
+    fi
+
 }
 
 ##
@@ -612,7 +650,7 @@ function installedW() {
         # Result of YAD dialog
         local __salida=
         local __boton=0
-        while [ $__boton -ne 1 ]; do
+        while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
             local __num=
             __num=$("$JQ" ". | length" "$NILEINSTALLED")
             local __LISTA=()
@@ -685,7 +723,19 @@ function aboutW() {
 function exitW() {
     "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="$lEXITMSG:LBL" --align=center --timeout=3
 
-    kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ] && echo "Downloader Activo"
+    if kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ];then
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --sticky --buttons-layout=spread --no-escape \
+            --button="$lWAIT":1 --button="$lEXIT":0 --text="$lASKWAIT")
+
+        local __boton=$?
+        if [ $__boton -eq 0 ]; then
+            kill "$PID_DOWNLOADER"
+            pkill nile
+            show_msg "$lALLSTOPED"
+        else
+            show_msg "$lALLNOSTOPED"
+        fi
+    fi
 }
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
