@@ -358,38 +358,42 @@ function add_steam() {
 
     local __F=$__path/fuel.json
 
-    local __exec= ; local __dep=
+    local __exec=
+    local __dep=
     __exec="$("$JQ" .Main.Command "$__F") $("$JQ" -r '.Main.Args | @sh' "$__F")"
 
-    local __dep= ; local __num= ; local __args= ; #local ARG=()
+    local __dep=
+    local __num=
+    local __args=
+    local ARG=()
     __num=$("$JQ" ".PostInstall | length" "$__F")
     for ((i = 0; i < __num; i++)); do
-        __args=$("$JQ" ".PostInstall[$i].Args | length" "$__F");
-        #ARG=();
-        #for ((j = 0; j < __args; j++)); do
-        #    ARG+=("$("$JQ" ".PostInstall[$i].Args[$j]" "$__F")")
-        #done
-        #__dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") ${ARG[*]}"
-        __dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") $("$JQ" -r ".PostInstall[$i].Args | @sh" "$__F")"
+        __args=$("$JQ" ".PostInstall[$i].Args | length" "$__F")
+        ARG=()
+        for ((j = 0; j < __args; j++)); do
+            ARG+=("$("$JQ" -r ".PostInstall[$i].Args[$j]" "$__F")")
+        done
+        __dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") ${ARG[*]}"
+        #__dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") $("$JQ" -r ".PostInstall[$i].Args | @sh" "$__F" )"
     done
 
     local __ason_bat="@echo off\n\n\
-    IF EXIST \"ason.dependencies\" (\n\
-    	REM Dependencies are installed\n\
-    )ELSE (\n\
-    	REM To install the dependencies\n\
-    	echo Intalling dependencies\n\
-    	$__dep \n\
-    	echo Installed > ason.dependencies\n\
-    )\n\
-    \n\
-    REM Run the app\n\
-    echo Run Game...\n\
-    $__exec \n\
-    \n\
-    exit 0"
-    
+IF EXIST c:\\\\ason.dependencies\ (\n\
+REM Dependencies are installed\n\
+)ELSE (\n\
+REM To install the dependencies\n\
+echo Intalling dependencies\n\
+$__dep \n\
+echo Installed > c:\\\\ason.dependencies\n\
+)\n\
+REM Run the app\n\
+echo Run Game...\n\
+START \"\" $__exec \n\
+\n\
+exit 0"
+
     echo -ne "$__ason_bat" >"$__path/$__name".bat
+    echo -ne "$__ason_bat" >"$__path/ason.bat"
 }
 
 ##
@@ -459,7 +463,7 @@ function loadingW() {
     local __pid=
 
     # splash Window
-    "$YAD" "$TITTLE" --center --splash  --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons &
+    "$YAD" "$TITTLE" --center --splash --on-top --image="$(fileRandomInDir "$ASONSIMGPLASH")" --no-buttons &
     __pid=$!
 
     [ -d "$ASONCACHE" ] || mkdir -p "$ASONCACHE"
@@ -623,9 +627,16 @@ function download_managerW() {
 #
 function gameDetailW() {
     local __index=$1
-    local __fecha= ; local __developer= ;local __publicador= ;local __esrb= ;local __generos= ;local __modos= ;local __desc= ; local __info=
+    local __fecha=
+    local __developer=
+    local __publicador=
+    local __esrb=
+    local __generos=
+    local __modos=
+    local __desc=
+    local __info=
     __info=$("$JQ" -r '.['"$__index"'].product.productDetail.details | "\(.releaseDate)|\(.developer)|\(.publisher)|\(.esrbRating)|\(.genres)|\(.gameModes)|\(.shortDescription)|\(.screenshots)"' "$NILELIBR")
-    
+
     __fecha=$(echo "$__info" | cut -d '|' -f1)
     __developer=$(echo "$__info" | cut -d '|' -f2)
     __publicador=$(echo "$__info" | cut -d '|' -f3)
@@ -639,11 +650,11 @@ function gameDetailW() {
 
     local __image=
     [ "$(basename "${AIMGD[$__index]}")" == 'null' ] && __image=${AIMG[$__index]} || __image=${AIMGD[$__index]}
-    
-    "$YAD" "$TITTLE" --center --image="$__image" --sticky --buttons-layout=spread --width=512 --form --field="$__text":LBL --button="$lBACK":1 --button="$lINSTALL":8 > /dev/null
+
+    "$YAD" "$TITTLE" --center --image="$__image" --sticky --buttons-layout=spread --width=512 --form --field="$__text":LBL --button="$lBACK":1 --button="$lINSTALL":8 >/dev/null
 
     local __boton=$?
-    if [ "$__boton" -eq 8 ];then
+    if [ "$__boton" -eq 8 ]; then
         local __id=
         local __name=
         __id=$($JQ -r ".[$__index].id" "$NILELIBR")
@@ -739,7 +750,7 @@ function aboutW() {
 function exitW() {
     "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="$lEXITMSG:LBL" --align=center --timeout=3
 
-    if kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ];then
+    if kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ]; then
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --sticky --buttons-layout=spread --no-escape \
             --button="$lWAIT":1 --button="$lEXIT":0 --text="$lASKWAIT")
 
