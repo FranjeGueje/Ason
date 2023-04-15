@@ -31,10 +31,10 @@ ASONCACHE="$HOME/.cache/ason/"
 YAD="$ASONBIN/yad"
 NILE="$ASONBIN/nile"
 JQ="$ASONBIN/jq"
-#TODO para las opciones de configuracion (Temporal)
 DIRINSTALL="$HOME/Games"
 
 # Config files of Ason
+ASONOPTIONFILE="$HOME/.config/nile/ason.config"
 ASONTITFILE="$ASONCACHE""/ason.tit"
 ATIT=()
 ASONIMGFILE="$ASONCACHE""/ason.img"
@@ -77,12 +77,12 @@ ICON="--window-icon=$ASONLOGO"
 # Set language
 case "$LANG" in
 es_ES.UTF-8)
-    lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder login en Amazon Games.\n\nPor favor, haz login correctamente."
+    lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder inicar en Amazon Games.\n\nPor favor, haz login correctamente."
     lLIBRARY=Biblioteca
     lINSTALLED=Instalado
     lOPTIONS=Opciones
     lEXIT=Salir
-    lEXITMSG='Gracias por usar ASON. Hasta pronto.'
+    lEXITMSG='Espero que hayas disfrutado de ASON. Hasta pronto.'
     lDOWNLOADSM='Descargas'
     lNODOWLOADS='No hay descargas en curso.'
     lGAME='Juego'
@@ -92,7 +92,6 @@ es_ES.UTF-8)
     lBACK='Volver'
     lINSTALL='Instalar'
     lUNINSTALL='Desinstalar'
-    #lADD_STEAM='Add to Steam'
     lDELETE='Borrar'
     lNOINSTALLED='No hay juegos instalados'
     lPATH='Ruta'
@@ -101,7 +100,7 @@ es_ES.UTF-8)
     lADDDOWNLOAD='Añadido a la cola de descargas'
     lSEARCH='Buscar'
     lSYNC='Sincronizar'
-    lRUNMENU='Lanzar...'
+    lADDMENU='Add Steam...'
     lUPDATE='Actualizar'
     lUPDATING='Actualizando'
     lSYNCHRONIZING='Sincronizando'
@@ -109,7 +108,16 @@ es_ES.UTF-8)
     lWAIT='Esperar'
     lASKWAIT='Hay descargas en curso.\n\n¿Quieres esperar a que terminen antes de salir?'
     lALLSTOPED='Todos los procesos han sido detenidos'
-    lALLNOSTOPED='Cerrando Ason pero continuando las descargas en segundo plano.\n\nAparecerá un mensaje al finalizar'
+    lALLNOSTOPED='Cerrando Ason pero continuando las descargas en segundo plano.\n\nAparecera un mensaje al finalizar'
+    lOLWHERE='Donde quieres guardar los juegos descargados?'
+    lODGAMESPATH='Ruta de descarga'
+    lSAVE='Guardar'
+    lABOUT='Acerca de'
+    lADREBOOT='Es necesario reiniciar Ason para iniciar con los nuevos cambios'
+    lREMEMBERADDSTEAM='Ya tienes tu juego en Steam.\n\n<b>MUY IMPORTANTE</b>, debes de configurar su compatibilidad de Proton desde Steam.\
+    Si no haces este cambio, probablemente <b>el juego no va a funcionar</b>.\n\nRecuerda, los juegos son gestionados y configurados desde Steam.'
+    lSUREADDSTEAM='Estas <b>SEGURO</b> de que tu quieres add to Steam este juego?\n\nEs posible que el juego sea duplicado si ya lo instalaste anteriormente.\
+    \n\n<b>RECUERDA</b>:\n\n\tGestiona tus juegos desde Steam.'
     ;;
 *)
     lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\nPlease login correctly."
@@ -127,7 +135,6 @@ es_ES.UTF-8)
     lBACK='Back'
     lINSTALL='Install'
     lUNINSTALL='Uninstall'
-    #lADD_STEAM='Add to Steam'
     lDELETE='Delete'
     lNOINSTALLED='There are no installed games.'
     lPATH='Path'
@@ -136,7 +143,7 @@ es_ES.UTF-8)
     lADDDOWNLOAD='Add to download'
     lSEARCH='Search'
     lSYNC='Sync'
-    lRUNMENU='Run...'
+    lADDMENU='Add Steam...'
     lUPDATE='Update'
     lUPDATING='Updating'
     lSYNCHRONIZING='Synchronizing'
@@ -145,6 +152,15 @@ es_ES.UTF-8)
     lASKWAIT='There are downloads in progress.\n\nDo you want to wait for them to finish before exiting?'
     lALLSTOPED='All processes have been stopped.'
     lALLNOSTOPED='Closing Ason but continuing downloads in the background.\n\nA message will appear when finished.'
+    lOLWHERE='Where do you want to save the downloaded games?'
+    lODGAMESPATH='Download path'
+    lSAVE='Save'
+    lABOUT='About'
+    lADREBOOT='You have to close Ason to load the new configuration.'
+    lREMEMBERADDSTEAM='You just have the game add to Steam.Now, <b>VERY IMPORTANT</b>, you must configure its Proton compatibility in the game.\
+    \n\nIf you do not change the compatibility option on the Steam Game, you can not run the game.\n\n\nGames are managed and configured directly from Steam.'
+    lSUREADDSTEAM='Are you <b>SURE</b> you want to add to Steam this game?\n\nIt is possible that the game will be duplicated if you have already installed it.\
+    \n\n<b>REMEMBER</b>:\n\n\tManage the game from Steam directly.'
     ;;
 esac
 
@@ -342,30 +358,37 @@ function add_download() {
     local __name=$2
     local __image=$3
 
-    echo -ne "$__name|$__image" >"$QASON/$__id"
+    echo -ne "$__name|$__image" | iconv -c >"$QASON/$__id"
 }
 
 ##
-# add_steam
+# add_steam_game
 # Add a game to Steam
+#
+# $1 = source varname ( The executable of game )
+#
+function add_steam_game() {
+    encodedUrl="steam://addnonsteamgame/$(python3 -c "import urllib.parse;print(urllib.parse.quote(\"$1\", safe=''))")"
+    touch /tmp/addnonsteamgamefile
+    xdg-open "$encodedUrl"
+}
+
+##
+# create_bat_file
+# Create the bat file for windows. Create a bat script (for Windows). This script 1st install dependencies, then run the game
 #
 # $1 = source varname ( The tittle of game )
 # S2 = source varname ( The path of game )
 #
-function add_steam() {
-    local __name=$1
-    local __path=$2
+function create_bat_file() {
+    local __name=$1 ; local __path=$2
 
     local __F=$__path/fuel.json
 
-    local __exec=
-    local __dep=
+    local __exec= ; local __dep=
     __exec="$("$JQ" .Main.Command "$__F") $("$JQ" -r '.Main.Args | @sh' "$__F")"
 
-    local __dep=
-    local __num=
-    local __args=
-    local ARG=()
+    local __dep= ; local __num= ; local __args= ; local ARG=()
     __num=$("$JQ" ".PostInstall | length" "$__F")
     for ((i = 0; i < __num; i++)); do
         __args=$("$JQ" ".PostInstall[$i].Args | length" "$__F")
@@ -374,7 +397,6 @@ function add_steam() {
             ARG+=("$("$JQ" -r ".PostInstall[$i].Args[$j]" "$__F")")
         done
         __dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") ${ARG[*]}"
-        #__dep+="\n$("$JQ" ".PostInstall[$i].Command" "$__F") $("$JQ" -r ".PostInstall[$i].Args | @sh" "$__F" )"
     done
 
     local __ason_bat="@echo off\n\n\
@@ -394,6 +416,8 @@ exit 0"
 
     echo -ne "$__ason_bat" >"$__path/$__name".bat
     echo -ne "$__ason_bat" >"$__path/ason.bat"
+
+    echo -ne "$__dep" >"$__path/ason.dependencies.bat"
 }
 
 ##
@@ -420,6 +444,14 @@ function dologin() {
 }
 
 ##
+# dologout
+# Logout on Amazon Games over Nile.
+#
+function dologout() {
+    "$NILE" auth --logout
+}
+
+##
 # cache
 # Load or generate the cache of ASON
 #
@@ -435,8 +467,7 @@ function cache() {
 
     local __num=
     __num=$($JQ ". | length" "$NILELIBR")
-    local __url=
-    local __file=
+    local __url= ;  local __file=
     for ((i = 0; i < __num; i++)); do
         echo $((i * 100 / __num))
         __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
@@ -452,6 +483,16 @@ function cache() {
     done
 
     save_cache
+}
+
+##
+# load_options
+# Load the options from the file
+#
+function load_options() {
+    if [ -f "$ASONOPTIONFILE" ];then
+        DIRINSTALL=$(cut -d '|' -f1 < "$ASONOPTIONFILE")
+    fi
 }
 
 ##
@@ -475,11 +516,12 @@ function loadingW() {
         cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape
     fi
 
-    if [ ! -f AID_NAME ]; then
+    if [ ! -f "$AID_NAME" ]; then
         "$JQ" -r '.[] | "\(.id)==\(.product.title)==\(.product.productDetail.details.logoUrl)"' "$NILELIBR" | iconv -c >"$AID_NAME"
     fi
 
     load_cache
+    load_options
     reload_library
 
     # Kill the splash windows
@@ -526,8 +568,7 @@ function libraryW() {
     fi
 
     # Result of YAD dialog
-    local __salida=
-    local __boton=0
+    local __salida= ; local __boton=0
 
     while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
@@ -543,8 +584,7 @@ function libraryW() {
         0) gameDetailW "$__index" ;;
 
         2) # Install
-            local __id=
-            local __name=
+            local __id= ; local __name=
             __id=$($JQ -r ".[$__index].id" "$NILELIBR")
             __name=$(echo "$__salida" | cut -d'|' -f3)
             show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
@@ -581,8 +621,7 @@ function libraryW() {
 function download_managerW() {
 
     # Result of YAD dialog
-    local __salida=
-    local __boton=0
+    local __salida= ; local __boton=0
     while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
 
         if [ "$(ls -A "$QASON")" ]; then
@@ -637,13 +676,13 @@ function gameDetailW() {
     local __info=
     __info=$("$JQ" -r '.['"$__index"'].product.productDetail.details | "\(.releaseDate)|\(.developer)|\(.publisher)|\(.esrbRating)|\(.genres)|\(.gameModes)|\(.shortDescription)|\(.screenshots)"' "$NILELIBR")
 
-    __fecha=$(echo "$__info" | cut -d '|' -f1)
-    __developer=$(echo "$__info" | cut -d '|' -f2)
-    __publicador=$(echo "$__info" | cut -d '|' -f3)
-    __esrb=$(echo "$__info" | cut -d '|' -f4)
-    __generos=$(echo "$__info" | cut -d '|' -f5)
-    __modos=$(echo "$__info" | cut -d '|' -f6)
-    __desc=$(echo "$__info" | cut -d '|' -f7)
+    __fecha=$(echo "$__info" | cut -d '|' -f1 | iconv -c)
+    __developer=$(echo "$__info" | cut -d '|' -f2 | iconv -c)
+    __publicador=$(echo "$__info" | cut -d '|' -f3 | iconv -c)
+    __esrb=$(echo "$__info" | cut -d '|' -f4 | iconv -c)
+    __generos=$(echo "$__info" | cut -d '|' -f5 | iconv -c)
+    __modos=$(echo "$__info" | cut -d '|' -f6 | iconv -c)
+    __desc=$(echo "$__info" | cut -d '|' -f7 | iconv -c)
 
     local __text=
     __text="<b>Rel. Date:</b> $__fecha\t<b>Dev:</b> $__developer\t<b>Publ:</b> $__publicador\n\n<b>ESRB:</b> $__esrb\t<b>Genre:</b> $__generos\t<b>Modes:</b> $__modos\n\n<b>Description:</b> $__desc"
@@ -675,8 +714,7 @@ function installedW() {
         show_msg "$lNOINSTALLED"
     else
         # Result of YAD dialog
-        local __salida=
-        local __boton=0
+        local __salida= ; local __boton=0
         while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
             local __num=
             __num=$("$JQ" ". | length" "$NILEINSTALLED")
@@ -696,7 +734,7 @@ function installedW() {
 
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
                 --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" \
-                --button="$lBACK":1 --button="$lRUNMENU":0 --button="$lUPDATE":4 --button="$lUNINSTALL":2 "${__LISTA[@]}")
+                --button="$lBACK":1 --button="$lADDMENU":0 --button="$lUPDATE":4 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
             __ID=$(echo "$__salida" | cut -d '|' -f1)
@@ -704,9 +742,12 @@ function installedW() {
             __PATH=$("$JQ" -r .["$__ID"].path "$NILEINSTALLED")
 
             case "$__boton" in
-            0) # Run
-                #TODO llamar a la función de añadir a Steam que creará un .bat con los requisitos y lanzar el juego gracias a fuel.json
-                add_steam "$__NOMBRE" "$__PATH"
+            0) # Run Menu
+                if "$YAD" "$TITTLE" "$ICON" --center --text="$lSUREADDSTEAM" ;then
+                    create_bat_file "$__NOMBRE" "$__PATH"
+                    add_steam_game "$__PATH/$__NOMBRE".bat
+                    "$YAD" "$TITTLE" "$ICON" --center --text="$lREMEMBERADDSTEAM" --button="OK":0
+                fi
                 ;;
             2) # Uninstall
                 show_msg "$lUNINSTALLING $(echo "$__NOMBRE" | iconv -c)" &
@@ -731,7 +772,35 @@ function installedW() {
 # Show the OPTION Window
 #
 function optionW() {
-    aboutW
+    local __salida=
+
+    __salida=$("$YAD" "$TITTLE" "$ICON" --columns=1 --form --image="$(fileRandomInDir "$ASONSIMGPLASH")"\
+    --button="$lBACK":1 --button="$lSAVE":0 --button="Logout":3 --button="$lABOUT":2 --buttons-layout=edge --align=center \
+    --field="$lOLWHERE:LBL" --field="$lODGAMESPATH:DIR" '' "$DIRINSTALL")
+    
+    local __boton=$?
+
+    case "$__boton" in
+        0)
+            local __ruta= ; __ruta=$(echo "$__salida" | cut -d '|' -f2)
+            echo "$__ruta"'|' > "$ASONOPTIONFILE"
+            [ ! -d "$__ruta" ] && mkdir "$__ruta"
+            DIRINSTALL=$__ruta
+            "$YAD" "$TITTLE" "$ICON" --center --on-top --align=center --undecorated --text="$lADREBOOT" --button=OK:0
+            ;;
+        2)
+            aboutW
+            ;;
+        3)
+            dologout
+            delete_cache
+            show_msg "Exiting from Ason"
+            rm -f "$NILEUSER" "$NILELIBR"
+            exit 0
+            ;;
+        *)
+            ;;
+    esac
 }
 
 ##
@@ -739,8 +808,11 @@ function optionW() {
 # Show the ABOUT Window
 #
 function aboutW() {
-    "$YAD" "$TITTLE" --about --pname="ASON" --pversion="$VERSION" --comments="Play at your games of Amazon in Linux" \
-        --authors="Paco Guerrero <fjgj1@hotmail.com>" --website="https://github.com/FranjeGueje/Ason" "$ICON" --image="$ASONLOGO"
+    "$YAD" "$TITTLE" "$ICON" --about --pname="ASON" --pversion="$VERSION" --comments="Play at your games of Amazon in Linux." \
+        --authors="Paco Guerrero [fjgj1@hotmail.com],Nobody else XD" --website="https://github.com/FranjeGueje/Ason" --image="$ASONLOGO"
+    "$YAD" "$TITTLE" "$ICON" --text=\
+'Thanks to my family for their patience... My wife and children have earned heaven.\nAnd to you, my Elena.\n\n\nCredits to:\n\tNile <a href="https://github.com/imLinguin/nile">Link</a> - Cli to downloads Amazon Games on Linux\n\tYAD <a href="https://github.com/v1cont/yad">Link</a> - Advaced Dialogs on Linux\n\tJQ <a href="https://stedolan.github.io/jq">Link</a> - To work with json files\n\nAnd the Linux comunity.'\
+     --width=480 --height=230
 }
 
 ##
@@ -794,3 +866,6 @@ while [ $MENU -ne 252 ] && [ $MENU -ne 100 ]; do
 done
 
 exit 0
+
+#TODO crear botella
+#flatpak run --command=bottles-cli com.usebottles.bottles new --bottle-name Ason --environment gaming
