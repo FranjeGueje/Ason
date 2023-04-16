@@ -186,6 +186,7 @@ function get_cache() {
     [ -f "$__file" ] || wget "$__url" -O "$__file" >/dev/null 2>/dev/null &
 }
 
+
 ##
 # delete_cache
 # Delete all cache of Ason
