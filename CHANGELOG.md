@@ -2,10 +2,14 @@ v2.0
 
 # Version 2.0
 New features:
-- Change of engine from dialog to yad
+- Change of engine from dialog to yad.
+- Images and details of games.
+- Nile in binary file.
+- Download manager. Support several downloads.
 
 Fixes:
 - Stability improvements.
+
 
 # Version 1.1
 New features:

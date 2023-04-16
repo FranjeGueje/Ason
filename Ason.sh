@@ -6,7 +6,7 @@
 #
 # PARAMS: Nope.
 #
-# REQUERIMENTS: It does not have more than those required by the NILE project.
+# REQUERIMENTS: NILE, YAD, JQ, WGET, SHUF, gnu utils :D
 #
 # EXITs:
 # 0 --> OK!!!.
@@ -53,22 +53,13 @@ PID_DOWNLOADER=
 # Log of downloader
 LOGDOWNLOADER="$ASONCACHE"ason.downloader.log
 
-# Desktop file
-#DESKTOP_NAME_FILE="$HOME/.local/share/applications/ason.desktop"
-
-# Startup content
-#CONTENT_DESKTOP="[Desktop Entry]\n\
-#Name=Ason\n\
-#Exec=\"$(readlink -f "$0")\"\n\
-#Terminal=false\n\
-#Type=Application\n"
-
 # IMG dir
 ASONIMAGES="$ASONPATH/img/"
 ASONSIMGPLASH="$ASONIMAGES/splash/"
 ASONIMGMAIN="$ASONIMAGES/main/"
 ASONLOGO="$ASONIMAGES/Ason_64.jpeg"
-ASONWARNING="$ASONIMAGES/warning.png"
+ASONWARNING="$ASONIMAGES/Ason_warning.png"
+ASONCOMPATING="$ASONIMAGES/Ason_compatibility.png"
 
 #* Tittle and share Window components
 TITTLE="--title=$NOMBRE - $VERSION"
@@ -77,7 +68,7 @@ ICON="--window-icon=$ASONLOGO"
 # Set language
 case "$LANG" in
 es_ES.UTF-8)
-    lNOLOGIN="Ason no ha podido encontrar la informacion necesaria para poder inicar en Amazon Games.\n\nPor favor, haz login correctamente."
+    lNOLOGIN="\n\nAson no ha podido encontrar la informacion necesaria para poder inicar en Amazon Games.\n\n\nPor favor, <b>haz login correctamente</b>."
     lLIBRARY=Biblioteca
     lINSTALLED=Instalado
     lOPTIONS=Opciones
@@ -120,7 +111,7 @@ es_ES.UTF-8)
     \n\n<b>RECUERDA</b>:\n\n\tGestiona tus juegos desde Steam.'
     ;;
 *)
-    lNOLOGIN="Ason could not find the information needed to login to Amazon Games.\n\nPlease login correctly."
+    lNOLOGIN="\n\nAson could not find the information needed to login to Amazon Games.\n\n\nPlease, <b>login correctly</b>."
     lLIBRARY=Library
     lINSTALLED=Installed
     lOPTIONS=Options
@@ -746,7 +737,7 @@ function installedW() {
                 if "$YAD" "$TITTLE" "$ICON" --center --text="$lSUREADDSTEAM" ;then
                     create_bat_file "$__NOMBRE" "$__PATH"
                     add_steam_game "$__PATH/$__NOMBRE".bat
-                    "$YAD" "$TITTLE" "$ICON" --center --text="$lREMEMBERADDSTEAM" --button="OK":0
+                    "$YAD" "$TITTLE" "$ICON" --center --text="$lREMEMBERADDSTEAM" --button="OK":0 --image="$ASONCOMPATING"
                 fi
                 ;;
             2) # Uninstall
@@ -866,6 +857,3 @@ while [ $MENU -ne 252 ] && [ $MENU -ne 100 ]; do
 done
 
 exit 0
-
-#TODO crear botella
-#flatpak run --command=bottles-cli com.usebottles.bottles new --bottle-name Ason --environment gaming
