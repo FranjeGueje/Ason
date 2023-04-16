@@ -1,18 +1,29 @@
-v1.1
+v2.0
+
+# Version 2.0
+New features:
+- Change of engine from dialog to yad.
+- Images and details of games.
+- Nile in binary file.
+- Download manager. Support several downloads.
+
+Fixes:
+- Stability improvements.
+
 
 # Version 1.1
-Nuevas funciones:
-- Opción para cambiar de ubicación la instalación de juegos.
-- Ampliar Readme y doc.
+New features:
+- Option to change game installation location.
+- Extend Readme and doc.
 
 
 # Version 1.0
-Nuevas funciones:
-- Descargar/Instalar juegos de Amazon Games con la cuenta prime.
-- Desinstalar juegos ya instalados.
-- Actualizar juegos instalados.
-- Sincronizar biblioteca del usuario de Amazon Games.
+New features:
+- Download/install games from Amazon Games with the prime account.
+- Uninstall already installed games.
+- Update installed games.
+- Synchronize Amazon Games user library.
 
-Arreglos:
-- Mejoras de estabilidad.
-- Mejoras de rendimiento.
+Fixes:
+- Stability improvements.
+- Performance improvements.

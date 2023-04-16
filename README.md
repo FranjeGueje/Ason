@@ -1,77 +1,69 @@
 # Asón ([A]mazon on [S]teamOS [O]ver [N]ile)
 _**A GUI for an unofficial Amanzon Games Launcher (nile)**_
 
-Esta utilidad **querrá** ser un frontend, GUI o asistente para Amazon Games Launcher en Linux. Para esto, Asón se apoya en nile https://github.com/imLinguin/nile ¡Todos los aplausos para esta utilidad! _**nile**_ es una herramienta escrita en python que sirve de cliente de Amazon Games en Linux, todo mediante simples comandos.
+This application **is** a frontend, GUI o wizzard for Amazon Games Launcher on Linux. For this purpose, Asón relies use nile https://github.com/imLinguin/nile All the applause for this utility! _**nile**_ is a tool written in Python that serves as an Amazon Games client on Linux, all through simple commands.
 
-Actualmente es una utilidad que descarga y crea un entorno portable de fácil accesibilidad. Perfecto para **SteamOS** que es el entorno en el que se quiere enfocar esta herramienta.
+Currently, Ason is a utility that downloads and creates an easily accessible portable environment. It's perfect for **SteamOS** which is the environment in which this tool is intended to be focused.
 
-Es totalmente funcional a través de comandos _**nile**_, en esta herramienta: `Ason-cli.sh` y se van implementando a través del asistente [que es su objetivo].
+It is fully functional through a series of windows displayed through _**yad**_, which makes it a pleasant and easy to use user experience.
 
-## ¿Por qué el nombre de Asón? (Si el autor es de Murcia)
-Amazon Games tiene nombre de río.
-Nile tiene nombre de río.
-Yo quería aportar mi granito de arena, pero es imposible compararme con los dos anteriores. ¡Son enormes! Así que he buscado algo bonito y pequeño en España:
 
-Asón es el río más corto de España. Cuenta con una longitud total de 39 kilómetros y discurre por la cornisa cantábrica. Pese a su corta longitud su trazado es muy recomendable como paseo natural ya que está en un paisaje de gran belleza. ¡Todavía no lo he visitado!
+## Why the name Asón (if the author is from Murcia)?
+Amazon Games has the name of a river.
+Nile has the name of a river.
+I wanted to do my bit, but it's impossible to compare with the two previous ones, they are huge! So I've been looking for something nice and small in Spain:
 
-## Instalar
-Ejecuta en una línea de comandos:
+Asón is the shortest river in Spain. It has a total length of 39 kilometers and runs along the Cantabrian coast. Despite its short length, its route is highly recommended as a nature walk because it is in a landscape of great beauty. I have not visited it yet!
 
-`curl https://raw.githubusercontent.com/FranjeGueje/Ason/master/INSTALL/install.sh | bash -s`
 
-No necesitas ser root. Este comando `install.sh` descarga el proyecto mediante git y hace un build con las herramientas necesarias. Todo lo empaqueta en un único directorio _**$HOME/Ason**_.
+## Features
+- Download/install games from Amazon Games with the prime account.
+- Uninstall already installed games.
+- Update installed games.
+- Synchronize Amazon Games user library.
+- All this through friendly dialogues with images and details of games.
+- Download manager. Support several downloads.
+- Many more...
 
-## Ejecución
-Para la ejecución de Asón, corre directamente `Ason.sh` y te deberá de aparecer el menú del asistente a través de la utilidad *dialog* (incluida de forma portable en esta herramienta). Ahora mismo, este es el estado del proyecto:
-![MenuPrincipal](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/01.png)
-![Instalar](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/02.png)
 
-También, puedes ejectuar los comandos de nile por tu cuenta. Recuerda que lo descargamos anteriormente y preparamos el entorno. Esto sí está al 100%. Podemos hacer cualquier cosa mediante comandos. Para correr nile, mediante comandos, dentro del directorio Ason ejecuta `Ason-cli.sh` con los parámetros correctos.
+## Execution
+For the execution of Ason, run directly `Ason.sh` (remember to make it executable) and you should see the wizard menu through the *yad* utility (included in portable form in this tool):
+![Main Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/MainW.png)
+![Library Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/LibraryW.png)
+![Detail Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/DetailW.png)
+![Installed Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/InstalledW.png)
 
-_**RECORDATORIO**_: nile deja la configuración en ~/.config/nile
+_**FILES**_: Ason has their configuration in ~/.config/nile/ and ~/.cache/ason/ for the cache files.
+
+# Dependencies
+This applition is released with all executables, but you can replaced it (if you want).
+Ason uses:
+* NILE to manage Amazon Games
+* YAD to show the dialogs and images.
+* JQ to manage json files.
+* GNU Util to other functions.
 
 # FAQ
-## ¿Cómo se instala?
-Fácil: Abre un terminal/consola y ejecuta este comando:
+## How do I install it?
+* Easy: download the latest release version and unzip it wherever you want. It is portable. After that, make sure that the file "Ason.sh" is executable.
 
-**`curl https://raw.githubusercontent.com/FranjeGueje/Ason/master/INSTALL/install.sh | bash -s`**
+## How is it executed?
+* Easy: ejecuta `Ason.sh`
 
-El asistente de instalación lo hará todo por ti y tendrás la última versión de la herramienta.
+## Can I run games from the Ason itself?
+No, Ason does not run games. It downloads them and can add them to Steam, but does not run them. **IMPORTANT**, once the game is added to Steam, make sure to configure "proton compatibility" in Steam.
 
-## ¿Dónde se instala?
-Por defecto, se instala en la HOME del usuario, en el directorio **`$HOME/Ason`**. Si usas Deck, en /home/deck/Ason lo tendrás instalado.
+## Why?
+Sorry, I'm not a fan of modifying Steam shortcuts.vdf files to add games. Although I can recommend several tools that could complement this work.
 
-## No me gusta esa ubicación, ¿puedo cambiarla?
-Sí. Aunque se recomienda esa ubicación, Asón es portable y debería de poder moverse y seguir funcionando.
+## Is it possible to change the installation location of video games?
+Yes, from the options menu.
 
-## ¿Cómo se ejecuta?
-Tienes tres formas de ejecutar Asón:
-* Doble clic en **Ason.desktop**. _RECOMENDADO_
-* Desde la línea de comandos, ejecuta: `Ason.sh`
-* Desde la línea de comandos, puedes ejecutar cada comando de Ason/Nile como un profesional. _Para usuarios experimentados_
-
-## ¿Dónde se instalan los juegos?
-Por defecto Asón lo guarda en la capeta HOME, dentro de una subcarpeta llamada "Games/nile". Es decir, en SteamOS en **/home/deck/Games/nile**
-
-## ¿Se puede cambiar la ubicación de instalación de videojuegos?
-Sí, desde el menú de opciones.
-
-## ¿Cómo se desinstala? No quiero ningún resto.
-Simple. Para desinstalalar Ansó únicamente borra las carpetas con sus subcarpetas y ficheros:
-* $HOME/Ason
+## How do I uninstall it? I don't want any residue.
+Simple. To uninstall Ansó just delete the folders with their subfolders and files:
+* The Ason directory
 * $HOME/.config/nile
+* $HOME/.cache/ason
 
-## Parece que sacas versiones continuamente, que estás mejorándolo, ¿como me actualizo a la última versión?
-Fácil, borra la carpeta de Asón (recuerda, la carpeta por defecto está en $HOME/Ason) y lanza el comando de instalación desde un terminal/consola. Se volverá a descargar la última versión.
-
-## He visto que lo has ejecutado desde el GAMEMODE de Steam Deck, ¿cómo lo hago yo?
-Fáci (sí, otra vez). Añade un programa de no Steam como estarás acostumbrado a hacer... Los parámetros que tienes que ponerle son:
-- Comando a ejecutar: `"/usr/bin/xterm"`
-- Ubicación: `"/home/deck/Ason"` (o donde tengas Asón)
-- Parámetros: `-e "/home/deck/Ason/Ason.sh"` (o donde tengas Asón)
-
-# TODO
-- Mejorar Wizard para ejecutar juegos en bottles. En versión 2.
-- Avisar de que el juego tiene dependencias de terceros. En versión 2.
-- ¿Instalar las dependencias de terceros en bottles? ¿En versión 2?
-- ...
+## Run on Gamemode on Steam?
+Yes... You can add to Steam Ason.sh and remember, you must not select any proton compatibility. There are some limitations in Gamemode, such as not being able to search correctly or not being able to see some dialogues because they contain some strange characters for Steam.
