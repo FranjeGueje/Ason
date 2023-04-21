@@ -10,6 +10,7 @@
 #
 # EXITs:
 # 0 --> OK!!!.
+# 1 --> Missing required component.
 ##############################################################################################################################################################
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -17,7 +18,7 @@
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
-VERSION=2.0.0b1
+VERSION=2.0.0b2
 
 # Config files of nile
 NILEUSER="$HOME/.config/nile/user.json"
@@ -31,7 +32,12 @@ ASONCACHE="$HOME/.cache/ason/"
 YAD="$ASONBIN/yad"
 NILE="$ASONBIN/nile"
 JQ="$ASONBIN/jq"
+
+# Locations
 DIRINSTALL="$HOME/Games"
+DEBUGFILE="$ASONPATH/debug.log"
+
+PATH="$PATH:$ASONBIN"
 
 # Config files of Ason
 ASONOPTIONFILE="$HOME/.config/nile/ason.config"
@@ -50,8 +56,6 @@ ASONCACHEVER="$ASONCACHE""/ason.versioncache"
 QASON="$ASONCACHE""/ason.donwload"
 # Pid of downloader
 PID_DOWNLOADER=
-# Log of downloader
-LOGDOWNLOADER="$ASONCACHE"ason.downloader.log
 
 # IMG dir
 ASONIMAGES="$ASONPATH/img/"
@@ -109,6 +113,7 @@ es_ES.UTF-8)
     Si no haces este cambio, probablemente <b>el juego no va a funcionar</b>.\n\nRecuerda, los juegos son gestionados y configurados desde Steam.'
     lSUREADDSTEAM='Estas <b>SEGURO</b> de que tu quieres add to Steam este juego?\n\nEs posible que el juego sea duplicado si ya lo instalaste anteriormente.\
     \n\n<b>RECUERDA</b>:\n\n\tGestiona tus juegos desde Steam.'
+    lSCREENSHOTS='Screenshots'
     ;;
 *)
     lNOLOGIN="\n\nAson could not find the information needed to login to Amazon Games.\n\n\nPlease, <b>login correctly</b>."
@@ -152,12 +157,70 @@ es_ES.UTF-8)
     \n\nIf you do not change the compatibility option on the Steam Game, you can not run the game.\n\n\nGames are managed and configured directly from Steam.'
     lSUREADDSTEAM='Are you <b>SURE</b> you want to add to Steam this game?\n\nIt is possible that the game will be duplicated if you have already installed it.\
     \n\n<b>REMEMBER</b>:\n\n\tManage the game from Steam directly.'
+    lSCREENSHOTS='Screenshots'
     ;;
 esac
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!         FUNCTIONS
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+##
+# requisites
+# Show the detail of a game
+#
+# $1 = Text to Debub file
+#
+function to_debug_file() {
+    echo -e "$1" >>"$DEBUGFILE"
+}
+
+##
+# requisites
+# Show the detail of a game
+#
+function requisites() {
+    local __other_requisites=("wget" "iconv" "shuf")
+    local __test=
+
+    if [ ! -f "$YAD" ]; then
+        if __test=$(which "yad" 2>/dev/null); then
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Using yad from $__test"
+            YAD=$__test
+        else
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Missing required component yad"
+            echo "Missing required component yad" && exit 1
+        fi
+    fi
+
+    if [ ! -f "$NILE" ]; then
+        if __test=$(which "nile" 2>/dev/null); then
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Using nile from $__test"
+            NILE=$__test
+        else
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Missing required component nile"
+            echo "Missing required component nile" && exit 1
+        fi
+    fi
+
+    if [ ! -f "$JQ" ]; then
+        if __test=$(which "jq" 2>/dev/null); then
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Using jq from $__test"
+            JQ=$__test
+        else
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Missing required component jq"
+            echo "Missing required component jq" && exit 1
+        fi
+    fi
+
+    for i in "${__other_requisites[@]}"; do
+        if ! __test=$(which "$i" 2>/dev/null); then
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Missing required component jq"
+            echo "Missing required component $i" && exit 1
+        fi
+    done
+
+}
 
 ##
 # fileRandomInDir
@@ -183,7 +246,7 @@ function get_cache() {
     local __url=$1
     local __file=$2
 
-    [ -f "$__file" ] || wget "$__url" -O "$__file" >/dev/null 2>/dev/null &
+    [ ! -f "$__file" ] && wget "$__url" -O "$__file" >/dev/null 2>/dev/null && [ -n "$DEBUG" ] && to_debug_file "DBG: Download image $__url to $__file" &
 }
 
 ##
@@ -192,6 +255,7 @@ function get_cache() {
 #
 function delete_cache() {
     rm "$ASONTITFILE" "$ASONIMGFILE" "$ASONIMGDFILE" "$ASONGENFILE" "$AID_NAME" "$ASONCACHEVER" 2>/dev/null
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Delete cache files"
 }
 
 ##
@@ -239,14 +303,19 @@ function save_cache() {
     local __serialized=
     serialize_array ATIT __serialized '|'
     echo "$__serialized" >"$ASONTITFILE"
+    [ -n "$DEBUG" ] && to_debug_file "DBG: TITTLES:\n $__serialized\n"
     serialize_array AGEN __serialized '|'
     echo "$__serialized" >"$ASONGENFILE"
+    [ -n "$DEBUG" ] && to_debug_file "DBG: GENRES:\n $__serialized\n"
     serialize_array AIMG __serialized '|'
     echo "$__serialized" >"$ASONIMGFILE"
+    [ -n "$DEBUG" ] && to_debug_file "DBG: IMG:\n $__serialized\n"
     serialize_array AIMGD __serialized '|'
     echo "$__serialized" >"$ASONIMGDFILE"
+    [ -n "$DEBUG" ] && to_debug_file "DBG: IMGDescript:\n $__serialized\n"
 
     echo "$VERSION" >"$ASONCACHEVER"
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Cache Version: $VERSION"
 }
 
 ##
@@ -279,6 +348,8 @@ function reload_library() {
         ALIB+=("$i" "${AIMG[$i]}" "$(echo "${ATIT[$i]}" | iconv -c)" "${AGEN[$i]}")
     done
 
+    [ -n "$DEBUG" ] && to_debug_file "DBG: RELOAD LIBRARY:\n ${ALIB[*]}"
+
 }
 
 ##
@@ -304,7 +375,7 @@ function downloader_daemon() {
     [ -d "$QASON" ] || mkdir -p "$QASON"
     find "$QASON" -type f -exec rm -Rf {} \;
 
-    echo "Starting the Descargador." >"$LOGDOWNLOADER"
+    [ -n "$DEBUG" ] && to_debug_file "Downloader: Starting the Descargador."
     while kill -0 "$__fpid" 2>/dev/null || [ "$(ls -A "$QASON")" ]; do
 
         if [ "$(ls -A "$QASON")" ]; then
@@ -316,23 +387,27 @@ function downloader_daemon() {
 
             {
                 echo "Downloader: Downloading a game with ID: $__downloading and name $__name"
+                [ ! -d "$DIRINSTALL" ] && mkdir -p "$DIRINSTALL"
                 "$NILE" install --base-path "$DIRINSTALL" "$__downloading"
                 echo "Downloader: Finish the game with ID: $__downloading and name $__name"
-            } >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
+            } >>"$DEBUGFILE" 2>>"$DEBUGFILE"
 
             sleep 0.5
             if [ -f "$__file_downloading" ]; then
                 rm "$__file_downloading"
                 show_msg "$lINSTALLED" "$__image"
+                [ -n "$DEBUG" ] && to_debug_file "Downloader: Installed $lINSTALLED $__image"
             else
-                "$NILE" uninstall "$__downloading" >>"$LOGDOWNLOADER" 2>>"$LOGDOWNLOADER"
+                [ -n "$DEBUG" ] && to_debug_file "Downloader: Uninstalling $__downloading because the user deleted it from the queue"
+                "$NILE" uninstall "$__downloading" >>"$DEBUGFILE" 2>>"$DEBUGFILE"
+                [ -n "$DEBUG" ] && to_debug_file "Downloader: Uninstalled $__downloading because the user deleted it from the queue"
             fi
         else
             sleep 5
         fi
     done
 
-    echo "Exiting of descargador." >>"$LOGDOWNLOADER"
+    [ -n "$DEBUG" ] && to_debug_file "Downloader: Exiting of descargador."
 
 }
 
@@ -350,6 +425,7 @@ function add_download() {
     local __image=$3
 
     echo -ne "$__name|$__image" | iconv -c >"$QASON/$__id"
+    [ -n "$DEBUG" ] && to_debug_file "Downloader: Add to download queue the $(echo -ne "$__name|$__image" | iconv -c)"
 }
 
 ##
@@ -359,9 +435,16 @@ function add_download() {
 # $1 = source varname ( The executable of game )
 #
 function add_steam_game() {
-    encodedUrl="steam://addnonsteamgame/$(python3 -c "import urllib.parse;print(urllib.parse.quote(\"$1\", safe=''))")"
+    if ! grep -i "x-scheme-handler/steam=" <"$HOME"/.config/mimeapps.list >/dev/null 2>/dev/null; then
+        echo "x-scheme-handler/steam=steam.desktop;" >>"$HOME"/.config/mimeapps.list
+    fi
+    #x-scheme-handler/steam=steam.desktop;
+    local __encodedUrl=
+    __encodedUrl="steam://addnonsteamgame/$(python3 -c "import urllib.parse;print(urllib.parse.quote(\"$1\", safe=''))")"
     touch /tmp/addnonsteamgamefile
-    xdg-open "$encodedUrl"
+    xdg-open "$__encodedUrl" >>"$DEBUGFILE"
+
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Add to steam the url:\n$__encodedUrl\n"
 }
 
 ##
@@ -372,14 +455,19 @@ function add_steam_game() {
 # S2 = source varname ( The path of game )
 #
 function create_bat_file() {
-    local __name=$1 ; local __path=$2
+    local __name=$1
+    local __path=$2
 
     local __F=$__path/fuel.json
 
-    local __exec= ; local __dep=
+    local __exec=
+    local __dep=
     __exec="$("$JQ" .Main.Command "$__F") $("$JQ" -r '.Main.Args | @sh' "$__F")"
 
-    local __dep= ; local __num= ; local __args= ; local ARG=()
+    local __dep=
+    local __num=
+    local __args=
+    local ARG=()
     __num=$("$JQ" ".PostInstall | length" "$__F")
     for ((i = 0; i < __num; i++)); do
         __args=$("$JQ" ".PostInstall[$i].Args | length" "$__F")
@@ -391,13 +479,13 @@ function create_bat_file() {
     done
 
     local __ason_bat="@echo off\n\n\
-IF EXIST c:\\\\ason.dependencies\ (\n\
-REM Dependencies are installed\n\
+IF EXIST c:\\\\ason.dependencies (\n\
+   REM Dependencies are installed\n\
 )ELSE (\n\
-REM To install the dependencies\n\
-echo Intalling dependencies\n\
+   REM To install the dependencies\n\
+   echo Intalling dependencies\n\
 $__dep \n\
-echo Installed > c:\\\\ason.dependencies\n\
+   echo Installed > c:\\\\ason.dependencies \n\
 )\n\
 REM Run the app\n\
 echo Run Game...\n\
@@ -405,10 +493,14 @@ START \"\" $__exec \n\
 \n\
 exit 0"
 
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Generated the bat file with content:\n $__ason_bat \n"
     echo -ne "$__ason_bat" >"$__path/$__name".bat
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Created the bat file in $__path/$__name.bat"
     echo -ne "$__ason_bat" >"$__path/ason.bat"
-
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Created the bat file in $__path/ason.bat"
     echo -ne "$__dep" >"$__path/ason.dependencies.bat"
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Created the DEPENDENCIES bat file in $__path/ason.dependencies.bat"
+
 }
 
 ##
@@ -420,9 +512,9 @@ exit 0"
 #
 function show_msg() {
     if [ -n "$2" ]; then
-        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1" --image="$2"
+        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1" --image="$2" --no-markup
     else
-        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1"
+        "$YAD" "$TITTLE" "$ICON" --center --no-buttons --on-top --align=center --timeout=2 --undecorated --text="$1" --no-markup
     fi
 }
 
@@ -431,7 +523,9 @@ function show_msg() {
 # Login on Amazon Games over Nile.
 #
 function dologin() {
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Doing login"
     "$NILE" auth --login --no-sandbox
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Login exit"
 }
 
 ##
@@ -439,7 +533,9 @@ function dologin() {
 # Logout on Amazon Games over Nile.
 #
 function dologout() {
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Doing Logout"
     "$NILE" auth --logout
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Logout exit"
 }
 
 ##
@@ -458,7 +554,8 @@ function cache() {
 
     local __num=
     __num=$($JQ ". | length" "$NILELIBR")
-    local __url= ;  local __file=
+    local __url=
+    local __file=
     for ((i = 0; i < __num; i++)); do
         echo $((i * 100 / __num))
         __url="$($JQ -r ".[$i].product.productDetail.details.logoUrl" "$NILELIBR")"
@@ -481,8 +578,11 @@ function cache() {
 # Load the options from the file
 #
 function load_options() {
-    if [ -f "$ASONOPTIONFILE" ];then
-        DIRINSTALL=$(cut -d '|' -f1 < "$ASONOPTIONFILE")
+    if [ -f "$ASONOPTIONFILE" ]; then
+        [ -n "$DEBUG" ] && to_debug_file "DBG: using the options of file $ASONOPTIONFILE"
+        DIRINSTALL=$(cut -d '|' -f1 <"$ASONOPTIONFILE")
+    else
+        [ -n "$DEBUG" ] && to_debug_file "DBG: Using the default options"
     fi
 }
 
@@ -503,16 +603,21 @@ function loadingW() {
     local __ver_cache=0 && [ -f "$ASONCACHEVER" ] && __ver_cache=$(cat "$ASONCACHEVER")
 
     if [ ! -f "$ASONTITFILE" ] || [ ! -f "$ASONGENFILE" ] || [ ! -f "$ASONIMGFILE" ] || [ "$__ver_cache" != "$VERSION" ] || [ ! -f "$ASONIMGDFILE" ]; then
+        [ -n "$DEBUG" ] && to_debug_file "DBG: Some file cache is missing. Generating the cache"
         delete_cache
-        cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape
+        cache | "$YAD" "$ICON" --on-top --text="Caching..." --progress --auto-close --no-buttons --undecorated --no-escape --no-markup
     fi
 
     if [ ! -f "$AID_NAME" ]; then
+        [ -n "$DEBUG" ] && to_debug_file "DBG: Generating the ID and name cache"
         "$JQ" -r '.[] | "\(.id)==\(.product.title)==\(.product.productDetail.details.logoUrl)"' "$NILELIBR" | iconv -c >"$AID_NAME"
     fi
 
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Load cache"
     load_cache
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Load options"
     load_options
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Reload Library"
     reload_library
 
     # Kill the splash windows
@@ -524,7 +629,7 @@ function loadingW() {
 # Show the MAIN Window
 #
 function mainW() {
-    "$YAD" "$TITTLE" --center --image="$(fileRandomInDir "$ASONIMGMAIN")" --sticky --buttons-layout=spread \
+    "$YAD" "$TITTLE" --center --image="$(fileRandomInDir "$ASONIMGMAIN")" --sticky --buttons-layout=spread --no-markup \
         --button=$lLIBRARY:0 --button=$lINSTALLED:1 --button=$lOPTIONS:2 --button="$lDOWNLOADSM":3 --button="$lEXIT":100 "$ICON" --fixed --on-top
 
     MENU=$?
@@ -559,10 +664,13 @@ function libraryW() {
     fi
 
     # Result of YAD dialog
-    local __salida= ; local __boton=0
+    local __salida=
+    local __boton=0
+
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Showing the library list:\n${__ASLIB[*]}"
 
     while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
-        __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
+        __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --list --width=1280 --height=800 --hide-column=1 --sticky --no-markup --buttons-layout=spread \
             --button="$lBACK":1 --button="$lSEARCH":3 --button="$lDETAILS":0 --button="$lSYNC":4 --button="$lINSTALL":2 \
             --column=ID --column="$lGAME":IMG --column="$lTITTLE" --column="$lGENRE" "${__ASLIB[@]}")
 
@@ -571,11 +679,14 @@ function libraryW() {
         __index=$(echo "$__salida" | cut -d'|' -f1)
 
         case $__boton in
-        # Details
-        0) gameDetailW "$__index" ;;
+        0) # Details
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Get game detail of $__index index"
+            gameDetailW "$__index"
+            ;;
 
         2) # Install
-            local __id= ; local __name=
+            local __id=
+            local __name=
             __id=$($JQ -r ".[$__index].id" "$NILELIBR")
             __name=$(echo "$__salida" | cut -d'|' -f3)
             show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
@@ -584,6 +695,7 @@ function libraryW() {
         3) # Buscar
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --on-top --no-escape --button="OK":0 --form --field="$lSEARCH:")
             __salida=${__salida::-1}
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Searching the title:\n$__salida\n"
             libraryW "$__salida"
             break
             ;;
@@ -591,10 +703,10 @@ function libraryW() {
             show_msg "$lSYNCHRONIZING..." &
             local __num= && local __num_new=
             __num=$($JQ ". | length" "$NILELIBR")
-            "$NILE" library sync 2>/tmp/ason.msg
+            "$NILE" library sync 2>"$DEBUGFILE"
             __num_new=$($JQ ". | length" "$NILELIBR")
-            show_msg "$(cat /tmp/ason.msg)"
             if [ "$__num" -ne "$__num_new" ]; then
+                [ -n "$DEBUG" ] && to_debug_file "DBG: The library is changed"
                 delete_cache
                 loadingW
                 break
@@ -612,7 +724,8 @@ function libraryW() {
 function download_managerW() {
 
     # Result of YAD dialog
-    local __salida= ; local __boton=0
+    local __salida=
+    local __boton=0
     while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
 
         if [ "$(ls -A "$QASON")" ]; then
@@ -633,12 +746,13 @@ function download_managerW() {
             done
 
             local __salida=
-            __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
+            __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --no-markup --buttons-layout=spread \
                 --column=File --column="$lGAME":IMG --column="$lTITTLE" --button="$lBACK":1 --button="$lREFRESH":2 --button="$lDELETE":0 "${__ADOWN[@]}")
 
             local __boton=$?
 
             if [ "$__boton" -eq 0 ]; then
+                [ -n "$DEBUG" ] && to_debug_file "DBG: Deleting the download $(echo "$__salida" | cut -d'|' -f1)"
                 rm "$(echo "$__salida" | cut -d'|' -f1)"
             fi
         else
@@ -668,6 +782,7 @@ function gameDetailW() {
     __info=$("$JQ" -r '.['"$__index"'].product.productDetail.details | "\(.releaseDate)|\(.developer)|\(.publisher)|\(.esrbRating)|\(.genres)|\(.gameModes)|\(.shortDescription)|\(.screenshots)"' "$NILELIBR")
 
     __fecha=$(echo "$__info" | cut -d '|' -f1 | iconv -c)
+    __fecha="${__fecha:0:10}"
     __developer=$(echo "$__info" | cut -d '|' -f2 | iconv -c)
     __publicador=$(echo "$__info" | cut -d '|' -f3 | iconv -c)
     __esrb=$(echo "$__info" | cut -d '|' -f4 | iconv -c)
@@ -676,23 +791,63 @@ function gameDetailW() {
     __desc=$(echo "$__info" | cut -d '|' -f7 | iconv -c)
 
     local __text=
-    __text="<b>Rel. Date:</b> $__fecha\t<b>Dev:</b> $__developer\t<b>Publ:</b> $__publicador\n\n<b>ESRB:</b> $__esrb\t<b>Genre:</b> $__generos\t<b>Modes:</b> $__modos\n\n<b>Description:</b> $__desc"
+    __text="Rel. Date: $__fecha\tDeveloper: $__developer\tPublisher: $__publicador\n\nESRB: $__esrb\tGenre: $__generos\tModes: $__modos\n\nDescription: $__desc"
 
     local __image=
     [ "$(basename "${AIMGD[$__index]}")" == 'null' ] && __image=${AIMG[$__index]} || __image=${AIMGD[$__index]}
 
-    "$YAD" "$TITTLE" --center --image="$__image" --sticky --buttons-layout=spread --width=512 --form --field="$__text":LBL --button="$lBACK":1 --button="$lINSTALL":8 >/dev/null
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Detail of game:\n$__text\nAnd image: $__image"
 
-    local __boton=$?
-    if [ "$__boton" -eq 8 ]; then
-        local __id=
-        local __name=
-        __id=$($JQ -r ".[$__index].id" "$NILELIBR")
-        __name=${ATIT[$__index]}
-        show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
-        add_download "$__id" "$__name" "${AIMG[$__index]}"
-    fi
+    while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
+        "$YAD" "$TITTLE" "$ICON" --center --image="$__image" --sticky --buttons-layout=spread --width=512 --no-markup --no-markup --form \
+            --item-separator="#@#" --field="$__text":LBL --button="$lBACK":1 --button="$lSCREENSHOTS":4 --button="$lINSTALL":8 >/dev/null
 
+        local __boton=$?
+        case "$__boton" in
+        0) ;;
+        4)
+            [ -n "$DEBUG" ] && to_debug_file "DBG: View screenshot of $__index index"
+            screnshotsW "$__index"
+            ;;
+        8)
+            local __id=
+            local __name=
+            __id=$($JQ -r ".[$__index].id" "$NILELIBR")
+            __name=${ATIT[$__index]}
+            show_msg "$lADDDOWNLOAD" "${AIMG[$__index]}"
+            add_download "$__id" "$__name" "${AIMG[$__index]}"
+            ;;
+        *) ;;
+        esac
+    done
+}
+
+##
+# screnshotsW
+# Show the SCREENSHOTS Window
+#
+# $1 = source varname ( contains the index of game in JSON)
+#
+function screnshotsW() {
+    local __index=$1
+    local __tempS=/tmp/ason.screenshots/
+
+    [ ! -d "$__tempS" ] && mkdir "$__tempS"
+    [ -f "$__tempS/urls" ] && rm "$__tempS/urls"
+
+    for ((j = 0; j < $("$JQ" -r .["$__index"].product.productDetail.details.screenshots "$NILELIBR" | jq length); j++)); do
+        "$JQ" -r .["$__index"].product.productDetail.details.screenshots[$j] "$NILELIBR" >>"$__tempS/urls"
+    done
+
+    wget -i "$__tempS/urls" -P "$__tempS/." >/dev/null 2>/dev/null && rm "$__tempS/urls"
+
+    for i in "$__tempS"/*; do
+        [ -n "$DEBUG" ] && to_debug_file "DBG: Showing the screenshot $i"
+        "$YAD" "$TITTLE" "$ICON" --picture --filename="$i" --size=fit --buttons-layout=edge --width=1280 --height=800 \
+            --no-markup --button=Exit:252 --button=Next:0 || break
+    done
+
+    rm "$__tempS"/*
 }
 
 ##
@@ -705,7 +860,8 @@ function installedW() {
         show_msg "$lNOINSTALLED"
     else
         # Result of YAD dialog
-        local __salida= ; local __boton=0
+        local __salida=
+        local __boton=0
         while [ $__boton -ne 1 ] && [ $__boton -ne 252 ]; do
             local __num=
             __num=$("$JQ" ". | length" "$NILEINSTALLED")
@@ -723,8 +879,10 @@ function installedW() {
                 __LISTA+=("$i" "$__NOMBRE" "$ASONCACHE/$(basename "$__IMG")" "$__PATH")
             done
 
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Showing the installed list:\n${__LISTA[*]}"
+
             __salida=$("$YAD" "$TITTLE" "$ICON" --center --list --width=1280 --height=800 --hide-column=1 --sticky --buttons-layout=spread \
-                --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" \
+                --no-markup --column=Index --column="$lTITTLE" --column="$lGAME":IMG --column="$lPATH" \
                 --button="$lBACK":1 --button="$lADDMENU":0 --button="$lUPDATE":4 --button="$lUNINSTALL":2 "${__LISTA[@]}")
 
             local __boton=$?
@@ -734,21 +892,26 @@ function installedW() {
 
             case "$__boton" in
             0) # Run Menu
-                if "$YAD" "$TITTLE" "$ICON" --center --text="$lSUREADDSTEAM" ;then
+                if "$YAD" "$TITTLE" "$ICON" --center --text="$lSUREADDSTEAM"; then
+                    [ -n "$DEBUG" ] && to_debug_file "DBG: Creating the bat files"
                     create_bat_file "$__NOMBRE" "$__PATH"
+                    [ -n "$DEBUG" ] && to_debug_file "DBG: Adding to Steam"
                     add_steam_game "$__PATH/$__NOMBRE".bat
                     "$YAD" "$TITTLE" "$ICON" --center --text="$lREMEMBERADDSTEAM" --button="OK":0 --image="$ASONCOMPATING"
                 fi
                 ;;
             2) # Uninstall
                 show_msg "$lUNINSTALLING $(echo "$__NOMBRE" | iconv -c)" &
-                "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")" 2>/tmp/ason.msg
-                show_msg "$lUNINSTALLED $(echo "$__NOMBRE" | iconv -c):\n $(cat /tmp/ason.msg)"
+                [ -n "$DEBUG" ] && to_debug_file "DBG: Uninstalling $(echo "$__NOMBRE" | iconv -c)"
+                "$NILE" uninstall "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")" 2>>"$DEBUGFILE"
+                show_msg "$lUNINSTALLED $(echo "$__NOMBRE" | iconv -c)"
                 ;;
             4) # Update
                 show_msg "$lUPDATING $(echo "$__NOMBRE" | iconv -c)" &
-                "$NILE" install --base-path "$DIRINSTALL" "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")" 2>/tmp/ason.msg
-                show_msg "Updated $(echo "$__NOMBRE" | iconv -c):\n $(cat /tmp/ason.msg)"
+                [ ! -d "$DIRINSTALL" ] && mkdir -p "$DIRINSTALL"
+                [ -n "$DEBUG" ] && to_debug_file "DBG: Updating $(echo "$__NOMBRE" | iconv -c)"
+                "$NILE" install --base-path "$DIRINSTALL" "$("$JQ" -r ".[$__ID].id" "$NILEINSTALLED")" 2>>"$DEBUGFILE"
+                show_msg "Updated $(echo "$__NOMBRE" | iconv -c)"
                 ;;
             *) ;;
 
@@ -765,32 +928,32 @@ function installedW() {
 function optionW() {
     local __salida=
 
-    __salida=$("$YAD" "$TITTLE" "$ICON" --columns=1 --form --image="$(fileRandomInDir "$ASONSIMGPLASH")"\
-    --button="$lBACK":1 --button="$lSAVE":0 --button="Logout":3 --button="$lABOUT":2 --buttons-layout=edge --align=center \
-    --field="$lOLWHERE:LBL" --field="$lODGAMESPATH:DIR" '' "$DIRINSTALL")
-    
+    __salida=$("$YAD" "$TITTLE" "$ICON" --columns=1 --form --image="$(fileRandomInDir "$ASONSIMGPLASH")" \
+        --button="$lBACK":1 --button="$lSAVE":0 --button="Logout":3 --button="$lABOUT":2 --buttons-layout=edge --align=center \
+        --field="$lOLWHERE:LBL" --field="$lODGAMESPATH:DIR" '' "$DIRINSTALL")
+
     local __boton=$?
 
     case "$__boton" in
-        0)
-            local __ruta= ; __ruta=$(echo "$__salida" | cut -d '|' -f2)
-            echo "$__ruta"'|' > "$ASONOPTIONFILE"
-            [ ! -d "$__ruta" ] && mkdir "$__ruta"
-            DIRINSTALL=$__ruta
-            "$YAD" "$TITTLE" "$ICON" --center --on-top --align=center --undecorated --text="$lADREBOOT" --button=OK:0
-            ;;
-        2)
-            aboutW
-            ;;
-        3)
-            dologout
-            delete_cache
-            show_msg "Exiting from Ason"
-            rm -f "$NILEUSER" "$NILELIBR"
-            exit 0
-            ;;
-        *)
-            ;;
+    0)
+        local __ruta=
+        __ruta=$(echo "$__salida" | cut -d '|' -f2)
+        echo "$__ruta"'|' >"$ASONOPTIONFILE"
+        [ ! -d "$__ruta" ] && mkdir "$__ruta"
+        DIRINSTALL=$__ruta
+        "$YAD" "$TITTLE" "$ICON" --center --on-top --align=center --undecorated --text="$lADREBOOT" --button=OK:0
+        ;;
+    2)
+        aboutW
+        ;;
+    3)
+        dologout
+        delete_cache
+        show_msg "Exiting from Ason"
+        rm -f "$NILEUSER" "$NILELIBR"
+        exit 0
+        ;;
+    *) ;;
     esac
 }
 
@@ -801,9 +964,8 @@ function optionW() {
 function aboutW() {
     "$YAD" "$TITTLE" "$ICON" --about --pname="ASON" --pversion="$VERSION" --comments="Play at your games of Amazon in Linux." \
         --authors="Paco Guerrero [fjgj1@hotmail.com],Nobody else XD" --website="https://github.com/FranjeGueje/Ason" --image="$ASONLOGO"
-    "$YAD" "$TITTLE" "$ICON" --text=\
-'Thanks to my family for their patience... My wife and children have earned heaven.\nAnd to you, my Elena.\n\n\nCredits to:\n\tNile <a href="https://github.com/imLinguin/nile">Link</a> - Cli to downloads Amazon Games on Linux\n\tYAD <a href="https://github.com/v1cont/yad">Link</a> - Advaced Dialogs on Linux\n\tJQ <a href="https://stedolan.github.io/jq">Link</a> - To work with json files\n\nAnd the Linux comunity.'\
-     --width=480 --height=230
+    "$YAD" "$TITTLE" "$ICON" --text='Thanks to my family for their patience... My wife and children have earned heaven.\nAnd to you, my Elena.\n\n\nCredits to:\n\tNile <a href="https://github.com/imLinguin/nile">Link</a> - Cli to downloads Amazon Games on Linux\n\tYAD <a href="https://github.com/v1cont/yad">Link</a> - Advaced Dialogs on Linux\n\tJQ <a href="https://stedolan.github.io/jq">Link</a> - To work with json files\n\nAnd the Linux comunity.' \
+        --width=480 --height=230
 }
 
 ##
@@ -811,18 +973,24 @@ function aboutW() {
 # Show the EXIT Window
 #
 function exitW() {
-    "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="$lEXITMSG:LBL" --align=center --timeout=3
+    "$YAD" "$TITTLE" --splash --no-buttons --image="$(fileRandomInDir "$ASONSIMGPLASH")" --form --field="$lEXITMSG:LBL" --align=center --timeout=3 \
+        --item-separator="#@#" --no-markup
 
     if kill -0 "$PID_DOWNLOADER" 2>/dev/null && [ "$(ls -A "$QASON")" ]; then
+        [ -n "$DEBUG" ] && to_debug_file "DBG: Downloader is active"
         __salida=$("$YAD" "$TITTLE" "$ICON" --center --sticky --buttons-layout=spread --no-escape \
             --button="$lWAIT":1 --button="$lEXIT":0 --text="$lASKWAIT")
 
         local __boton=$?
         if [ $__boton -eq 0 ]; then
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Killing the $PID_DOWNLOADER pid"
             kill "$PID_DOWNLOADER"
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Killing all nile process"
             pkill nile
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Quiting with brute force"
             show_msg "$lALLSTOPED"
         else
+            [ -n "$DEBUG" ] && to_debug_file "DBG: Exiting but waiting to downloader"
             show_msg "$lALLNOSTOPED"
         fi
     fi
@@ -832,13 +1000,20 @@ function exitW() {
 #!         MAIN
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#* Check the requisites and required components
+requisites
+
+[ -n "$DEBUG" ] && [ -f "$DEBUGFILE" ] && rm "$DEBUGFILE"
+
 #* While the user is not logged
 while [ ! -f "$NILEUSER" ] || [ ! -f "$NILELIBR" ]; do
+    [ -n "$DEBUG" ] && to_debug_file "DBG: Nile files are missing. Do login"
     "$YAD" "$TITTLE" --center --splash --image="$ASONWARNING" --text="$lNOLOGIN" \
         --timeout=4 --no-buttons --timeout-indicator=top
     dologin
 done
 
+[ -n "$DEBUG" ] && to_debug_file "DBG: LOADING"
 loadingW
 
 downloader_daemon $$ &
@@ -855,5 +1030,7 @@ while [ $MENU -ne 252 ] && [ $MENU -ne 100 ]; do
     252 | 100) exitW ;;
     esac
 done
+
+[ -n "$DEBUG" ] && to_debug_file "DBG: Exit"
 
 exit 0

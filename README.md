@@ -1,7 +1,7 @@
 # Asón ([A]mazon on [S]teamOS [O]ver [N]ile)
 _**A GUI for an unofficial Amanzon Games Launcher (nile)**_
 
-This application **is** a frontend, GUI o wizzard for Amazon Games Launcher on Linux. For this purpose, Asón relies use nile https://github.com/imLinguin/nile All the applause for this utility! _**nile**_ is a tool written in Python that serves as an Amazon Games client on Linux, all through simple commands.
+This application **is** a frontend, GUI or wizzard for Amazon Games Launcher on Linux. For this purpose, Asón relies use nile https://github.com/imLinguin/nile All the applause for this utility! _**nile**_ is a tool written in Python that serves as an Amazon Games client on Linux, all through simple commands.
 
 Currently, Ason is a utility that downloads and creates an easily accessible portable environment. It's perfect for **SteamOS** which is the environment in which this tool is intended to be focused.
 
@@ -31,6 +31,7 @@ For the execution of Ason, run directly `Ason.sh` (remember to make it executabl
 ![Main Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/MainW.png)
 ![Library Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/LibraryW.png)
 ![Detail Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/DetailW.png)
+![Screenshots Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/ScreenshotsW.png)
 ![Installed Window](https://raw.githubusercontent.com/FranjeGueje/Ason/master/doc/InstalledW.png)
 
 _**FILES**_: Ason has their configuration in ~/.config/nile/ and ~/.cache/ason/ for the cache files.
@@ -45,10 +46,13 @@ Ason uses:
 
 # FAQ
 ## How do I install it?
-* Easy: download the latest release version and unzip it wherever you want. It is portable. After that, make sure that the file "Ason.sh" is executable.
+Easy: download the latest release version and unzip it wherever you want. It is portable. After that, make sure that the file "Ason.sh" is executable.
 
 ## How is it executed?
-* Easy: ejecuta `Ason.sh`
+Easy: run `Ason.sh`
+
+## How can I debug Asón to see the execution details?
+Run `DEBUG=Y ./Ason.sh`. All details will be in debug.log.
 
 ## Can I run games from the Ason itself?
 No, Ason does not run games. It downloads them and can add them to Steam, but does not run them. **IMPORTANT**, once the game is added to Steam, make sure to configure "proton compatibility" in Steam.

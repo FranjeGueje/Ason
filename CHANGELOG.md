@@ -1,4 +1,13 @@
-v2.0
+## Beta 2.0.0b2
+New features:
+- Screenshots window on detail window: new button and window for visualize the screenshots of a game.
+- Initially check if the required components are found. 
+- Mode Debug. You have to run it like "DEBUG=Y ./Ason.sh". It will created a file named debug.log.
+
+Fixes, minor changes:
+- Changes on format of date: from 2020-01-01T00:00:00 to 2020-01-01
+- Cuts on somes descriptions: Now all descriptions are complete.
+- Check if the target directory exist.
 
 # Version 2.0
 New features:
