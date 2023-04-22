@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if ! which "python3" 2>/dev/null ;then
+    echo "Missing python3."
+    exit 8
+fi
+
+MYDIR=$(realpath "$(dirname "$0")")
+
+if [ -d "$MYDIR/nile.venv" ];then
+    source "$MYDIR"/nile.venv/bin/activate && "$MYDIR"/nile.venv/nile/bin/nile "$@"
+else
+    echo "We have to create the virtual environment"
+    python3 -m venv "$MYDIR"/nile.venv || exit 1
+    
+    # Change the data of variables VIRTUAL_ENV for do "portable"
+    sed -i "s#$(pwd)#\$\(pwd\)#g" "$MYDIR"/nile.venv/bin/activate
+    sed -i "s#$(pwd)#\$\(pwd\)#g" "$MYDIR"/nile.venv/bin/activate.csh
+
+    # Download the nile project
+    (cd "$MYDIR"/nile.venv && git clone https://github.com/imLinguin/nile.git && cd nile && git reset --hard a707cfa3f6709a7c10936f39174c33e43cf77287)
+
+    # Activate the virtual environment
+    source "$MYDIR"/nile.venv/bin/activate || exit 2
+    pip3 install -r "$MYDIR"/nile.venv/nile/requirements.txt || exit 3
+
+    # Send the command
+    "$MYDIR"/nile.venv/nile/bin/nile "$@"
+fi
+
+exit 0
