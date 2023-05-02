@@ -7,7 +7,7 @@ fi
 
 MYDIR=$(realpath "$(dirname "$0")")
 
-if [ -d "$MYDIR/nile.venv" ];then
+if [ -f "$MYDIR"/nile.venv/bin/activate ];then
     source "$MYDIR"/nile.venv/bin/activate && "$MYDIR"/nile.venv/nile/bin/nile "$@"
 else
     echo "We have to create the virtual environment"

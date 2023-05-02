@@ -42,7 +42,7 @@ Ason uses:
 * NILE to manage Amazon Games
 * YAD to show the dialogs and images.
 * JQ to manage json files.
-* GNU Util to other functions.
+* GNU Utils for other functions.
 
 # FAQ
 ## How do I install it?
@@ -71,3 +71,6 @@ Simple. To uninstall Ansó just delete the folders with their subfolders and fil
 
 ## Run on Gamemode on Steam?
 Yes... You can add to Steam Ason.sh and remember, you must not select any proton compatibility. There are some limitations in Gamemode, such as not being able to search correctly or not being able to see some dialogues because they contain some strange characters for Steam.
+
+## Ason run only on Steam?
+Nope... You can run Ason on other Linux. Download the "Ason_Linux-x86_64_xxx.zip" and extract it. You need python3, pip3, and virtual environment (python3-virtualenv in Ubuntu).

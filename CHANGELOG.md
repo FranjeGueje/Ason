@@ -1,3 +1,13 @@
+## Beta 2.0.0b3
+New features:
+- Uninstalling: changes on uninstalling engine. Now Ason uninstall the game, delete the game's folder and manifest file.
+- Big changes on library and engine: generating cache, jq queries, ... Major changes under the hood.
+
+Fixes, minor changes:
+- Fixes on some image sizes: some logos are not standard. Now Ason, resize the images.
+- Fix a loop on login function: Set maximum login attempts to 1.
+- More stability improvements.
+
 ## Beta 2.0.0b2
 New features:
 - Screenshots window on detail window: new button and window for visualize the screenshots of a game.
