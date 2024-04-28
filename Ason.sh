@@ -7,7 +7,7 @@
 # PARAMS: Nope.
 # DEBUG MODE: run 'DEBUG=Y path-to-Ason/Ason.sh'
 #
-# REQUERIMENTS: NILE, YAD, JQ, WGET, SHUF, FILE, FIND, ... gnu utils :D
+# REQUERIMENTS: NILE, YAD, JQ, SHORTCUTSNAMEID, WGET, SHUF, FILE, FIND, ... gnu utils :D
 #
 # EXITs:
 # 0 --> OK!!!.
@@ -20,7 +20,7 @@
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
-VERSION=2.0.0b3
+VERSION=2.0.0
 
 # Config files of nile
 NILEUSER="$HOME/.config/nile/user.json"
@@ -34,6 +34,8 @@ ASONCACHE="$HOME/.cache/ason/"
 YAD="$ASONBIN/yad"
 NILE="$ASONBIN/nile"
 JQ="$ASONBIN/jq"
+NAMEID="$ASONBIN/shortcutsNameID"
+GRIDER="$ASONBIN/grider"
 
 # Locations
 DIRINSTALL="$HOME/Games"
@@ -95,6 +97,7 @@ es_ES.UTF-8)
     lALLSTOPED='Todos los procesos han sido detenidos'
     lALLNOSTOPED='Cerrando Ason pero continuando las descargas en segundo plano.\n\nAparecera un mensaje al finalizar'
     lOLWHERE='Donde quieres guardar los juegos descargados?'
+    lOLGRID='Clave para descargar grids desde Steamgriddb'
     lODGAMESPATH='Ruta de descarga'
     lSAVE='Guardar'
     lABOUT='Acerca de'
@@ -141,6 +144,7 @@ es_ES.UTF-8)
     lALLSTOPED='All processes have been stopped.'
     lALLNOSTOPED='Closing Ason but continuing downloads in the background.\n\nA message will appear when finished.'
     lOLWHERE='Where do you want to save the downloaded games?'
+    lOLGRID='Key for download grids from steamgriddb'
     lODGAMESPATH='Download path'
     lSAVE='Save'
     lABOUT='About'
@@ -330,6 +334,34 @@ function fileRandomInDir() {
     local __dir=$1
 
     find "$__dir" -mindepth 0 -maxdepth 1 -type f | shuf -n 1
+}
+
+##
+# download_grid
+# Download the grids for a game
+#
+# $1 = Name of game
+#
+function download_grid() {
+    local __NOMBRE=$1
+    local __ANAMEID="/tmp/ason.nameID"
+    local __ANAMES="/tmp/ason.names"
+    local __AGRIDS="/tmp/ason.grid"
+    [ -n "$GRIDKEY" ] || GRIDKEY=0
+    mkdir -p "$__AGRIDS"
+    rm -f "$__ANAMEID"
+    sleep 3
+    find "$HOME/.local/share/Steam/userdata/" -name "shortcuts.vdf" -type f -exec "$NAMEID" {} \; >>  "$__ANAMEID"
+    cut -f1 -d $'\t' "$__ANAMEID" > "$__ANAMES"
+    if grep -w "$__NOMBRE".bat < "$__ANAMES" >/dev/null ; then
+        local __id=
+        __id=$(grep -m 1 "$__NOMBRE".bat$'\t' < "$__ANAMEID" | cut -f2 -d $'\t')
+        "$GRIDER" -dest "$__AGRIDS" "$GRIDKEY" "$__NOMBRE" "$__id"
+        for dir in "$HOME"/.local/share/Steam/userdata/*/; do
+            cp "$__AGRIDS"/* "$dir/config/grid/"
+        done
+        rm -f $__AGRIDS/*
+    fi
 }
 
 ##
@@ -651,6 +683,7 @@ function load_options() {
     if [ -f "$ASONOPTIONFILE" ]; then
         [ -n "$DEBUG" ] && to_debug_file "DBG: using the options of file $ASONOPTIONFILE"
         DIRINSTALL=$(cut -d '|' -f1 <"$ASONOPTIONFILE")
+        GRIDKEY=$(cut -d '|' -f2 <"$ASONOPTIONFILE")
     else
         [ -n "$DEBUG" ] && to_debug_file "DBG: Using the default options"
     fi
@@ -941,6 +974,9 @@ function installedW() {
                 create_bat_file "$__NOMBRE" "$__PATH"
                 [ -n "$DEBUG" ] && to_debug_file "DBG: Adding to Steam"
                 add_steam_game "$__PATH/$__NOMBRE".bat
+
+                download_grid "$__NOMBRE" &
+
                 "$YAD" "$TITTLE" "$ICON" --center --text="$lREMEMBERADDSTEAM" --button="OK":0 --image="$ASONCOMPATING"
             fi
             ;;
@@ -1001,17 +1037,20 @@ function optionW() {
 
     __salida=$("$YAD" "$TITTLE" "$ICON" --columns=1 --form --image="$(fileRandomInDir "$ASONSIMGPLASH")" \
         --button="$lBACK":1 --button="$lSAVE":0 --button="Logout":3 --button="$lABOUT":2 --buttons-layout=edge --align=center \
-        --field="$lOLWHERE:LBL" --field="$lODGAMESPATH:DIR" '' "$DIRINSTALL")
+        --field="$lOLWHERE:LBL" --field="$lODGAMESPATH:DIR" '' "$DIRINSTALL" --field="$lOLGRID:" "$GRIDKEY")
 
     local __boton=$?
 
     case "$__boton" in
     0)
         local __ruta=
+        local __opciones=
         __ruta=$(echo "$__salida" | cut -d '|' -f2)
-        echo "$__ruta"'|' >"$ASONOPTIONFILE"
+        __opciones="${__salida:1:-1}"
+        echo "$__opciones"'|' >"$ASONOPTIONFILE"
         [ ! -d "$__ruta" ] && mkdir "$__ruta"
         DIRINSTALL=$__ruta
+        GRIDKEY=$(echo "$__opciones" | cut -d '|' -f2)
         "$YAD" "$TITTLE" "$ICON" --center --on-top --align=center --undecorated --text="$lADREBOOT" --button=OK:0
         ;;
     2)
