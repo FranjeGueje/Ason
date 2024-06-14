@@ -20,7 +20,7 @@
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
-VERSION=2.0.0
+VERSION=2.0.1
 
 # Config files of nile
 NILEUSER="$HOME/.config/nile/user.json"
@@ -176,7 +176,7 @@ function get_nile_title() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | .product.title '
+    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | .product.title '
 }
 
 ##
@@ -192,7 +192,7 @@ function get_nile_logo() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | .product.productDetail.details.logoUrl ' | sed "s|https://m.media-amazon.com/images/I/|$ASONCACHE|g"
+    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | .product.productDetail.details.logoUrl ' | sed "s|https://m.media-amazon.com/images/I/|$ASONCACHE|g"
 }
 
 ##
@@ -208,7 +208,7 @@ function get_nile_image() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | .product.productDetail.details.pgCrownImageUrl ' | sed "s|https://m.media-amazon.com/images/I/|$ASONCACHE|g"
+    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | .product.productDetail.details.pgCrownImageUrl ' | sed "s|https://m.media-amazon.com/images/I/|$ASONCACHE|g"
 }
 
 ##
@@ -224,7 +224,7 @@ function get_nile_screenshots() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | .product.productDetail.details.screenshots[] '
+    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | .product.productDetail.details.screenshots[] '
 }
 
 ##
@@ -240,7 +240,7 @@ function get_nile_detail() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | "\(.product.productDetail.details.releaseDate)|\(.product.productDetail.details.developer)|\(.product.productDetail.details.publisher)|\(.product.productDetail.details.esrbRating)|\(.product.productDetail.details.genres)|\(.product.productDetail.details.gameModes)|\(.product.productDetail.details.shortDescription)|\(.product.productDetail.details.screenshots)"'
+    iconv -c "$NILELIBR" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | "\(.product.productDetail.details.releaseDate)|\(.product.productDetail.details.developer)|\(.product.productDetail.details.publisher)|\(.product.productDetail.details.esrbRating)|\(.product.productDetail.details.genres)|\(.product.productDetail.details.gameModes)|\(.product.productDetail.details.shortDescription)|\(.product.productDetail.details.screenshots)"'
 }
 
 ##
@@ -256,7 +256,7 @@ function get_nile_path_installed_game() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILEINSTALLED" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | .path'
+    iconv -c "$NILEINSTALLED" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | .path'
 }
 
 ##
@@ -483,7 +483,7 @@ function reload_library() {
     # Requisite of jq
     # shellcheck disable=SC2016
     readarray -t -d '|' \
-        ALIB < <("$JQ" -r -j --arg v "$__search" '.[] | select(.product.title | ascii_downcase | contains ($v)) | "\(.id)|\(.product.productDetail.details.logoUrl)|\(.product.title)|\(.product.productDetail.details.genres[0])|"' "$NILELIBR" | sed "s|https://m.media-amazon.com/images/I/|$ASONCACHE|g" | iconv -c)
+        ALIB < <("$JQ" -r -j --arg v "$__search" '.[] | select(.product.title | ascii_downcase | contains ($v)) | "\(.product.id)|\(.product.productDetail.details.logoUrl)|\(.product.title)|\(.product.productDetail.details.genres[0])|"' "$NILELIBR" | sed "s|https://m.media-amazon.com/images/I/|$ASONCACHE|g" | iconv -c)
 
     [ -n "$DEBUG" ] && to_debug_file "DBG: RELOAD LIBRARY:\n ${ALIB[*]}"
 
