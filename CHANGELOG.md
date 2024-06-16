@@ -1,3 +1,7 @@
+## Stable 2.0.0
+New features:
+- Ability to download images (grids) from SteamgridDB. It is necessary to enter the API key in options.
+
 ## Beta 2.0.0b3
 New features:
 - Uninstalling: changes on uninstalling engine. Now Ason uninstall the game, delete the game's folder and manifest file.
