@@ -256,7 +256,7 @@ function get_nile_path_installed_game() {
 
     # Requisite of jq
     # shellcheck disable=SC2016
-    iconv -c "$NILEINSTALLED" | "$JQ" -r --arg v "$__id" '.[] | select (.product.id == $v ) | .path'
+    iconv -c "$NILEINSTALLED" | "$JQ" -r --arg v "$__id" '.[] | select (.id == $v ) | .path'
 }
 
 ##
