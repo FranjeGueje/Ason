@@ -1,3 +1,7 @@
+## Stable 2.0.1
+Fixes, minor changes:
+- Fixes the changes on nile with id, now the .id is  .product.id
+
 ## Stable 2.0.0
 New features:
 - Ability to download images (grids) from SteamgridDB. It is necessary to enter the API key in options.
