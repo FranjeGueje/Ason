@@ -20,7 +20,7 @@
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
-VERSION=2.0.1
+VERSION=2.1
 
 # Config files of nile
 NILEUSER="$HOME/.config/nile/user.json"
@@ -109,6 +109,9 @@ es_ES.UTF-8)
     lSCREENSHOTS='Screenshots'
     lSUREUNINSTALL='¿Estas <b>SEGURO</b> de que tu quieres desinstalar este juego y borrar su carpeta de instalación?\
     \n\n<b>RECUERDA</b>: podría contener información valiosa del juego como saves.'
+    lURL='<b>Pega aquí</b> la url tras iniciar sesión'
+    lTEXTLOGIN1='A continuación se abrirá en tu navegador por defecto una web de inicio de sesión en Amazon.\n\nPor favor, <b>inicia sesión</b> en Amazon en esa ventana.'
+    lTEXTLOGIN2="Por último, tras acabar el login de forma correcta, <b>copia</b> la url a la que te redirigió Amazon (generalmente la tienda)."
     ;;
 *)
     lNOLOGIN="\n\nAson could not find the information needed to login to Amazon Games.\n\n\nPlease, <b>login correctly</b>."
@@ -156,6 +159,9 @@ es_ES.UTF-8)
     lSCREENSHOTS='Screenshots'
     lSUREUNINSTALL='Are you <b>SURE</b> you want to uninstall this game and delete its installation folder?\
     \n\n<b>REMEMBER</b>: it might contain valuable game information such as saves'.
+    lURL='<b>Paste here</b> the url after logging in to Amazon'
+    lTEXTLOGIN1='An Amazon login website will then open in your browser by default.\n\nPlease <b>login</b> to Amazon in that tab.'
+    lTEXTLOGIN2="Finally, after finishing the login correctly, <b>copy</b> the url to which Amazon redirected you (usually the web store)."
     ;;
 esac
 
@@ -661,7 +667,38 @@ function show_msg() {
 #
 function dologin() {
     [ -n "$DEBUG" ] && to_debug_file "DBG: Doing login"
-    "$NILE" auth --login --no-sandbox
+    #"$NILE" auth --login --no-sandbox
+    local __token=__client_id=__code_verifier=__serial=__url=__code=__auth_code=
+
+    __token=$("$NILE" auth -l --non-interactive)
+    __client_id=$(echo "$__token" | $JQ -r ."client_id")
+    __code_verifier=$(echo "$__token" | $JQ -r ."code_verifier")
+    __serial=$(echo "$__token" | $JQ -r ."serial")
+    __url=$(echo "$__token" | $JQ -r ."url")
+
+    "$YAD" "$TITTLE" "$ICON" --center --on-top --align=center --undecorated --text="$lTEXTLOGIN1" --button="ok":0 --width=400 --height=20
+
+    xdg-open "$__url" >/dev/null 2>&1
+
+    local __salida=
+
+    __salida=$("$YAD" "$TITTLE" "$ICON" --text="$lTEXTLOGIN2" \
+    --columns=1 --form --button="$lEXIT":1 --button="Enter":0  --buttons-layout=edge --align=center --field="$lURL":)
+
+    local __boton=$?
+
+    if [ "$__boton" -eq 0 ];then
+        __auth_code=$(echo "$__salida" | cut -d '|' -f1)
+        __code=${__auth_code##*openid.oa2.authorization_code=}
+        __code=${__code%%&*}
+
+        "$NILE" register --code "$__code" --client-id "$__client_id" --code-verifier "$__code_verifier" --serial "$__serial"
+    else
+         [ -n "$DEBUG" ] && to_debug_file "DBG: The user cancelled the login form."
+         show_msg "Exiting from Ason"
+         exit 99
+    fi
+
     [ -n "$DEBUG" ] && to_debug_file "DBG: Login exit"
 }
 
