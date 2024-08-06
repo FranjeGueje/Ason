@@ -1,3 +1,9 @@
+## Stable 2.1
+New features:
+- New login interface due to new version of nile.
+Fixes, minor changes:
+- Fixes the login on Amazon over the last version of nile.
+
 ## Stable 2.0.1
 Fixes, minor changes:
 - Fixes the changes on nile with id, now the .id is  .product.id
