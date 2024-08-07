@@ -37,6 +37,7 @@ JQ="$ASONBIN/jq"
 NAMEID="$ASONBIN/shortcutsNameID"
 GRIDER="$ASONBIN/grider"
 
+
 # Locations
 DIRINSTALL="$HOME/Games"
 DEBUGFILE="$ASONPATH/debug.log"
@@ -168,6 +169,46 @@ esac
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!         FUNCTIONS
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+##
+# Should be updated? - check the last stable version on The Internet
+#
+should_be_updated(){
+    local __file=__OLDVERSION=
+    __OLDVERSION="$ASONPATH/$(basename "$0").old"
+    local __URL_UPDATER="https://raw.githubusercontent.com/FranjeGueje/Ason/master/Ason.sh"
+    __file=$(basename "$0").lastversion && [ -f "$__file" ] && rm "$__file"
+
+    if ! wget -O "$__file" -q "$__URL_UPDATER" ;then
+        [ -n "$DEBUG" ] && to_debug_file "[WARNING] UPDATER: Cannot download the latest script version from Internet."
+        echo "[WARNING] Cannot download the latest script version."
+    else
+        local __BIG_VERSION=__SMALL_VERSION=__ACTUAL_BIG_VERSION=__ACTUAL_SMALL_VERSION=__VERSION_UPDATE=__UPDATE_DATA=
+        __VERSION_UPDATE=$(grep 'VERSION=' "$__file" | head -n 1 | cut -d '=' -f 2)
+        __BIG_VERSION=$(echo "$__VERSION_UPDATE" | cut -d '.' -f 1)
+        __SMALL_VERSION=$(echo "$__VERSION_UPDATE" | cut -d '.' -f 2)
+        __ACTUAL_BIG_VERSION=$(echo "$VERSION" | cut -d '.' -f 1)
+        __ACTUAL_SMALL_VERSION=$(echo "$VERSION" | cut -d '.' -f 2)
+        __UPDATE_DATA=$(grep 'FILE=' "$__file" | head -n 1 | cut -d '=' -f 2)
+
+        if [[ $__BIG_VERSION -gt $__ACTUAL_BIG_VERSION || ($__BIG_VERSION -eq $__ACTUAL_BIG_VERSION && $__SMALL_VERSION -gt $__ACTUAL_SMALL_VERSION) ]];then
+            [ -n "$DEBUG" ] && to_debug_file "[INFO] UPDATER: It's necesary updating to version $__VERSION_UPDATE"
+            #cp "$0" "$__OLDVERSION" && mv "$__file" "$0" && chmod +x "$0"
+            [ -d "$ASONPATH""/.extract" ] && rm -Rf "$ASONPATH""/.extract" && mkdir -p "$ASONPATH""/.extract"
+            if wget -O "$__file".zip -q "$__URL_UPDATER" ;then
+                unzip "$__file".zip -d "$ASONPATH""/.extract"
+                mv "$ASONPATH""/.extract"/*/* /tmp/Ason 
+            fi
+            [ -d "$ASONPATH""/.extract" ] && rm -Rf "$ASONPATH""/.extract"
+            echo "[WARNING] $NOMBRE is updated. Please, rerun this tool!"
+            show_msg "Ason is updated. Please, rerun Ason."
+            exit 0
+        else
+            [ -n "$DEBUG" ] && to_debug_file "[INFO] UPDATER: Not necesary updating. The actual version is $VERSION and the web is $__VERSION_UPDATE"
+        fi
+    fi
+    [ -f "$__file" ] && rm "$__file"
+}
 
 ##
 # get_nile_title
@@ -1148,6 +1189,8 @@ function exitW() {
 
 #* Check the requisites and required components
 requisites
+
+should_be_updated
 
 [ -n "$DEBUG" ] && [ -f "$DEBUGFILE" ] && rm "$DEBUGFILE"
 
