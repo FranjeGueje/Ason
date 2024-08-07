@@ -176,7 +176,7 @@ esac
 should_be_updated(){
     local __file=__OLDVERSION=
     __OLDVERSION="$ASONPATH/$(basename "$0").old"
-    local __URL_UPDATER="https://raw.githubusercontent.com/FranjeGueje/Ason/master/Ason.sh"
+    local __URL_UPDATER="https://raw.githubusercontent.com/FranjeGueje/Ason/master/Updating/updating"
     __file=$(basename "$0").lastversion && [ -f "$__file" ] && rm "$__file"
 
     if ! wget -O "$__file" -q "$__URL_UPDATER" ;then
