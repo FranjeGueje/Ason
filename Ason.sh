@@ -20,7 +20,7 @@
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Basic
 NOMBRE="ASON - [Amazon Games on Steam OS over Nile]"
-VERSION=2.1
+VERSION=2.2
 
 # Config files of nile
 NILEUSER="$HOME/.config/nile/user.json"
